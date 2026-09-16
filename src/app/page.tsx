@@ -50,7 +50,7 @@ export default async function Home() {
       {usuario.papel === "master" && (
         <section className="space-y-4">
           <GerarConvite />
-          <NovaObraForm criadoPor={usuario.id} />
+          <NovaObraForm />
         </section>
       )}
 

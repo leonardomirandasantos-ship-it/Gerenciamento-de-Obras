@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export function NovaObraForm({ criadoPor }: { criadoPor: string }) {
+export function NovaObraForm() {
   const router = useRouter();
   const [nome, setNome] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -16,9 +16,7 @@ export function NovaObraForm({ criadoPor }: { criadoPor: string }) {
     setCarregando(true);
 
     const supabase = createClient();
-    const { error } = await supabase
-      .from("obras")
-      .insert({ nome, criado_por: criadoPor });
+    const { error } = await supabase.from("obras").insert({ nome });
 
     setCarregando(false);
 

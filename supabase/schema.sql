@@ -115,6 +115,11 @@ create trigger trg_adicionar_criador_como_membro
   after insert on obras
   for each row execute function adicionar_criador_como_membro();
 
+-- Preenche empresa_id/criado_por sozinho a partir de quem está logado, para
+-- o client não precisar (e não conseguir) informar isso na mão
+alter table obras alter column empresa_id set default empresa_atual();
+alter table obras alter column criado_por set default usuario_atual_id();
+
 -- =========================================================
 -- RPCs de onboarding e convite
 -- =========================================================
