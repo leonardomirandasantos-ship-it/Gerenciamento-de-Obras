@@ -36,12 +36,24 @@ autores de lançamento.
 | **Empresa** | Conta "guarda-chuva". No MVP existe só uma. No futuro, um usuário pode pertencer a várias empresas. |
 | **Obra** | Um projeto/canteiro. Cada obra tem sua própria "conversa" (feed), igual um grupo de WhatsApp dedicado. |
 | **Usuário** | Pessoa com login. Pertence a uma empresa, participa de uma ou mais obras. |
-| **Papel (role)** | `master` (cria obras, convida usuários, vê tudo) e `membro` (participa das obras em que foi incluído e lança registros, mas não cria obra nova). Papéis mais granulares (cliente/dono da obra só visualizando) ficam para depois. |
+| **Papel (role)** | `master` (cria obras, convida usuários, vê tudo) e `membro` (participa das obras em que foi incluído e lança registros, mas não cria obra nova). O papel é definido por quem convida, no momento do convite — pode existir mais de um `master` na mesma empresa. Papéis mais granulares (cliente/dono da obra só visualizando) ficam para depois. |
 | **Lançamento** | Cada mensagem/registro solto na conversa da obra: um gasto, um pagamento feito, ou só uma atualização de andamento. |
 | **Pendência** | Lançamento do tipo "gasto a reembolsar" que ainda não foi quitado. |
 | **Comprovante** | Anexo opcional (foto de nota, print de PIX) ligado a um lançamento — nunca obrigatório. |
 
-## 4. Como funciona (conceito central)
+## 4. Convite por link
+
+- Um `master` clica em "Convidar", escolhe o papel da pessoa (`master` ou
+  `membro`) e o app gera um **link único** (com um token).
+- O `master` copia e envia esse link do jeito que quiser (WhatsApp, e-mail
+  etc.) — não é a Supabase quem manda o e-mail, é a própria pessoa que
+  compartilha.
+- Quem recebe o link abre, define e-mail/senha (cria a conta de verdade via
+  Supabase Auth) e já entra automaticamente na empresa, com o papel que foi
+  definido na hora do convite.
+- Cada link só pode ser usado uma vez; depois de usado, fica inválido.
+
+## 5. Como funciona (conceito central)
 
 - **Cada obra é uma conversa própria** (como um grupo de WhatsApp). Isso já
   resolve "de qual obra é esse gasto" sem precisar perguntar — o contexto é a
@@ -75,15 +87,16 @@ autores de lançamento.
 engenheiro fica para uma fase futura, quando outros papéis passarem a lançar
 diretamente.)
 
-## 5. Escopo do MVP
+## 6. Escopo do MVP
 
 **Dentro do MVP:**
-- Login real (Supabase Auth), mas **acesso só por convite direto do master** —
-  sem tela pública de cadastro nem fluxo de aprovação dentro do app. O master
-  adiciona as 1–2 contas de teste diretamente (ex: convite por e-mail via
-  Supabase), todas na mesma empresa.
-- Só o `master` cria obras; membros participam e lançam nas obras em que
-  foram incluídos.
+- Login real (Supabase Auth), mas **acesso só por convite direto** — sem tela
+  pública de cadastro nem fluxo de aprovação dentro do app. Quem convida
+  escolhe o papel da pessoa (`master` ou `membro`) — dá pra convidar alguém
+  já como `master`, com poder de criar obra e convidar outras pessoas também.
+  Todos ficam na mesma empresa no MVP.
+- `master` cria obras e convida gente; `membro` participa e lança registros
+  nas obras em que foi incluído, mas não cria obra nova.
 - Lançar mensagens livres na conversa da obra (texto).
 - Interpretação assistida (parsing simples + perguntas de fallback com opções).
 - Anexo de comprovante opcional (imagem), sem obrigatoriedade nenhuma.
@@ -106,7 +119,7 @@ diretamente.)
 - Notificações push.
 - Orçado x Realizado (comparar orçamento planejado vs. gasto real).
 
-## 6. Modelo de dados (rascunho)
+## 7. Modelo de dados (rascunho)
 
 ```
 empresas
@@ -114,6 +127,10 @@ empresas
 
 usuarios
   id, empresa_id, auth_id (Supabase Auth), nome, email, papel (master|membro)
+
+convites
+  id, token, empresa_id, papel (master|membro), criado_por, usado_por,
+  criado_em, usado_em
 
 obras
   id, empresa_id, nome, criado_por, criado_em, status (ativa|encerrada)
@@ -130,7 +147,7 @@ anexos
   id, lancamento_id, url_arquivo, tipo (comprovante|foto), criado_em
 ```
 
-## 7. Stack técnica proposta
+## 8. Stack técnica proposta
 
 Pensando em "rodar 100% a partir do Git" com deploy simples e barato pra
 validar o modelo:
@@ -146,17 +163,18 @@ validar o modelo:
   linguagem (ex: API da Anthropic) numa fase 2, quando o volume de casos
   exigir mais robustez.
 
-## 8. Decisões já fechadas (rodada 2)
+## 9. Decisões já fechadas (rodada 2)
 
-- Só o `master` cria obras/conversas; a experiência deve ser tão intuitiva e
+- Só `master` cria obras/conversas; a experiência deve ser tão intuitiva e
   simples quanto um WhatsApp "melhorado".
 - Todo status (reembolsado/pago) é autodeclarado — sem aprovação de terceiro.
 - Nada de comprovante obrigatório no MVP: é pra ficar livre, quase uma
   anotação organizada, não um formulário.
-- Sem cadastro público: acesso por convite manual do master via Supabase,
-  testando com 1–2 usuários na mesma empresa antes de abrir mais.
+- Sem cadastro público: acesso por **convite via link gerado no app**, que o
+  próprio master envia manualmente (não é e-mail automático da Supabase).
+  Quem convida escolhe se a pessoa entra como `master` ou `membro`.
 
-## 9. Perguntas em aberto
+## 10. Perguntas em aberto
 
 - Quando validarmos com mais gente, o cadastro continua manual (convite) ou
   vale a pena abrir um fluxo de solicitação + aprovação dentro do app?
