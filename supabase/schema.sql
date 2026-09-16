@@ -52,11 +52,12 @@ create table if not exists lancamentos (
   id uuid primary key default gen_random_uuid(),
   obra_id uuid not null references obras(id) on delete cascade,
   autor_id uuid not null references usuarios(id),
-  tipo text not null check (tipo in ('gasto_reembolsar', 'pagamento_feito', 'atualizacao')),
+  tipo text not null check (tipo in ('gasto_reembolsar', 'pagamento_feito', 'lembrete', 'atualizacao')),
   valor numeric(12, 2),
   descricao text,
   pessoa_relacionada text,
-  status text not null default 'pendente' check (status in ('pendente', 'reembolsado', 'pago')),
+  data_lembrete date,
+  status text not null default 'pendente' check (status in ('pendente', 'reembolsado', 'pago', 'concluido')),
   criado_em timestamptz not null default now()
 );
 

@@ -8,6 +8,7 @@ import { parseLancamento, type TipoLancamento } from "@/lib/parseLancamento";
 const RÓTULOS_TIPO: Record<TipoLancamento, string> = {
   gasto_reembolsar: "Gasto a reembolsar",
   pagamento_feito: "Pagamento que eu fiz",
+  lembrete: "Lembrete",
   atualizacao: "Só atualização (sem valor)",
 };
 
@@ -44,9 +45,10 @@ export function NovoLancamento({
       obra_id: obraId,
       autor_id: autorId,
       tipo: rascunho.tipo,
-      valor: rascunho.valor,
+      valor: rascunho.tipo === "lembrete" ? null : rascunho.valor,
       descricao: texto,
       pessoa_relacionada: rascunho.pessoa,
+      data_lembrete: rascunho.tipo === "lembrete" ? rascunho.data : null,
       status,
     });
 
@@ -89,7 +91,7 @@ export function NovoLancamento({
             ))}
           </div>
 
-          {rascunho.tipo !== "atualizacao" && (
+          {(rascunho.tipo === "gasto_reembolsar" || rascunho.tipo === "pagamento_feito") && (
             <div className="flex items-center gap-2">
               <label className="text-xs text-neutral-500">R$</label>
               <input
@@ -111,6 +113,20 @@ export function NovoLancamento({
                   setRascunho({ ...rascunho, pessoa: e.target.value || null })
                 }
                 className="flex-1 rounded-md border border-neutral-300 px-2 py-1 text-sm"
+              />
+            </div>
+          )}
+
+          {rascunho.tipo === "lembrete" && (
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-neutral-500">Pra quando?</label>
+              <input
+                type="date"
+                value={rascunho.data ?? ""}
+                onChange={(e) =>
+                  setRascunho({ ...rascunho, data: e.target.value || null })
+                }
+                className="rounded-md border border-neutral-300 px-2 py-1 text-sm"
               />
             </div>
           )}

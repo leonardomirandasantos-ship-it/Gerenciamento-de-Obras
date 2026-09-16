@@ -9,6 +9,11 @@ function formatarValor(valor: number | null) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function formatarData(data: string | null) {
+  if (!data) return null;
+  return new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR");
+}
+
 export function PainelGestao({ lancamentos }: { lancamentos: Lancamento[] }) {
   const router = useRouter();
 
@@ -16,6 +21,9 @@ export function PainelGestao({ lancamentos }: { lancamentos: Lancamento[] }) {
     (l) => l.tipo === "gasto_reembolsar" && l.status === "pendente",
   );
   const pagamentosFeitos = lancamentos.filter((l) => l.tipo === "pagamento_feito");
+  const lembretes = lancamentos
+    .filter((l) => l.tipo === "lembrete" && l.status !== "concluido")
+    .sort((a, b) => (a.data_lembrete ?? "9999").localeCompare(b.data_lembrete ?? "9999"));
 
   const totalGasto = lancamentos
     .filter((l) => l.tipo === "gasto_reembolsar")
@@ -26,6 +34,12 @@ export function PainelGestao({ lancamentos }: { lancamentos: Lancamento[] }) {
   async function marcarComoReembolsado(id: string) {
     const supabase = createClient();
     await supabase.from("lancamentos").update({ status: "reembolsado" }).eq("id", id);
+    router.refresh();
+  }
+
+  async function marcarComoConcluido(id: string) {
+    const supabase = createClient();
+    await supabase.from("lancamentos").update({ status: "concluido" }).eq("id", id);
     router.refresh();
   }
 
@@ -69,6 +83,37 @@ export function PainelGestao({ lancamentos }: { lancamentos: Lancamento[] }) {
                   className="shrink-0 rounded-md border border-neutral-300 px-2 py-1 text-xs"
                 >
                   Marcar como reembolsado
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="space-y-2">
+        <h3 className="text-sm font-medium">Lembretes</h3>
+        {lembretes.length === 0 ? (
+          <p className="text-sm text-neutral-400">Nenhum lembrete pendente.</p>
+        ) : (
+          <ul className="space-y-2">
+            {lembretes.map((l) => (
+              <li
+                key={l.id}
+                className="flex items-center justify-between rounded-md border border-neutral-200 p-3 text-sm"
+              >
+                <div>
+                  <p>{l.descricao}</p>
+                  {l.data_lembrete && (
+                    <p className="text-xs text-neutral-500">
+                      Até {formatarData(l.data_lembrete)}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => marcarComoConcluido(l.id)}
+                  className="shrink-0 rounded-md border border-neutral-300 px-2 py-1 text-xs"
+                >
+                  Concluído
                 </button>
               </li>
             ))}

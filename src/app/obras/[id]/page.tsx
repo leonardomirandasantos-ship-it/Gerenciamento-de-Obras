@@ -23,7 +23,7 @@ export default async function ObraPage({
 
   const { data: usuario } = await supabase
     .from("usuarios")
-    .select("id, nome")
+    .select("id, nome, papel")
     .eq("auth_id", user.id)
     .single();
 
@@ -44,7 +44,7 @@ export default async function ObraPage({
   const { data: lancamentos } = await supabase
     .from("lancamentos")
     .select(
-      "id, tipo, valor, descricao, pessoa_relacionada, status, criado_em, autor_id, autor:usuarios(nome)",
+      "id, tipo, valor, descricao, pessoa_relacionada, data_lembrete, status, criado_em, autor_id, autor:usuarios(nome)",
     )
     .eq("obra_id", id)
     .order("criado_em", { ascending: true });
@@ -62,7 +62,11 @@ export default async function ObraPage({
 
       <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
         <div className="flex flex-1 flex-col overflow-hidden md:border-r md:border-neutral-200">
-          <FeedLancamentos lancamentos={lancamentos ?? []} />
+          <FeedLancamentos
+            lancamentos={lancamentos ?? []}
+            usuarioAtualId={usuario.id}
+            podeEditarTudo={usuario.papel === "master"}
+          />
           <NovoLancamento obraId={obra.id} autorId={usuario.id} />
         </div>
 
