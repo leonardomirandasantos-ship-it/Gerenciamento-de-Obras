@@ -36,10 +36,10 @@ autores de lançamento.
 | **Empresa** | Conta "guarda-chuva". No MVP existe só uma. No futuro, um usuário pode pertencer a várias empresas. |
 | **Obra** | Um projeto/canteiro. Cada obra tem sua própria "conversa" (feed), igual um grupo de WhatsApp dedicado. |
 | **Usuário** | Pessoa com login. Pertence a uma empresa, participa de uma ou mais obras. |
-| **Papel (role)** | `master` (aprova cadastro, vê tudo) e `membro` (registra lançamentos). Papéis mais granulares (cliente/dono da obra só visualizando) ficam para depois. |
+| **Papel (role)** | `master` (cria obras, convida usuários, vê tudo) e `membro` (participa das obras em que foi incluído e lança registros, mas não cria obra nova). Papéis mais granulares (cliente/dono da obra só visualizando) ficam para depois. |
 | **Lançamento** | Cada mensagem/registro solto na conversa da obra: um gasto, um pagamento feito, ou só uma atualização de andamento. |
 | **Pendência** | Lançamento do tipo "gasto a reembolsar" que ainda não foi quitado. |
-| **Comprovante** | Anexo (foto de nota, print de PIX) ligado a um lançamento. |
+| **Comprovante** | Anexo opcional (foto de nota, print de PIX) ligado a um lançamento — nunca obrigatório. |
 
 ## 4. Como funciona (conceito central)
 
@@ -57,6 +57,10 @@ autores de lançamento.
   de reembolso, ou um pagamento que você fez pra alguém?"
 - Na aba de gestão, tudo isso aparece consolidado — por obra, ou (no futuro)
   todas as obras juntas.
+- Marcar um lançamento como "reembolsado" ou "pago" é sempre **autodeclarado**
+  pela própria pessoa, sem aprovação de terceiros. Isso não trava o registro:
+  a pessoa anota o gasto livremente e, quando quiser, vai até a lista de
+  pendências e marca como resolvido — igual quem risca um item numa lista.
 
 ### Cenários de lançamento cobertos no MVP
 
@@ -74,12 +78,17 @@ diretamente.)
 ## 5. Escopo do MVP
 
 **Dentro do MVP:**
-- Login com múltiplos usuários dentro de uma única empresa.
-- Cadastro por solicitação → aprovação por um usuário `master`.
-- Criar obras; cada obra = uma conversa.
+- Login real (Supabase Auth), mas **acesso só por convite direto do master** —
+  sem tela pública de cadastro nem fluxo de aprovação dentro do app. O master
+  adiciona as 1–2 contas de teste diretamente (ex: convite por e-mail via
+  Supabase), todas na mesma empresa.
+- Só o `master` cria obras; membros participam e lançam nas obras em que
+  foram incluídos.
 - Lançar mensagens livres na conversa da obra (texto).
 - Interpretação assistida (parsing simples + perguntas de fallback com opções).
-- Anexar comprovante (imagem) a um lançamento.
+- Anexo de comprovante opcional (imagem), sem obrigatoriedade nenhuma.
+- Marcar pendência como resolvida é autodeclarado, feito quando a pessoa
+  quiser, sem travar o uso do dia a dia.
 - Aba de gestão por obra com:
   - Lista de pendências (gastos aguardando reembolso).
   - Histórico de pagamentos feitos, por pessoa.
@@ -104,7 +113,7 @@ empresas
   id, nome, criado_em
 
 usuarios
-  id, empresa_id, nome, email, papel (master|membro), status (pendente|aprovado)
+  id, empresa_id, auth_id (Supabase Auth), nome, email, papel (master|membro)
 
 obras
   id, empresa_id, nome, criado_por, criado_em, status (ativa|encerrada)
@@ -137,12 +146,19 @@ validar o modelo:
   linguagem (ex: API da Anthropic) numa fase 2, quando o volume de casos
   exigir mais robustez.
 
-## 8. Perguntas em aberto
+## 8. Decisões já fechadas (rodada 2)
 
-- No fluxo de aprovação de cadastro, o `master` aprova pra empresa toda ou
-  também escolhe em quais obras a pessoa entra?
-- Quando o engenheiro marca um reembolso como "recebido", isso é uma ação dele
-  mesmo (autodeclarado) ou precisa de confirmação de outra pessoa (dono da
-  obra)?
-- Comprovante é obrigatório pra fechar uma pendência como paga/reembolsada, ou
-  fica só como recomendação?
+- Só o `master` cria obras/conversas; a experiência deve ser tão intuitiva e
+  simples quanto um WhatsApp "melhorado".
+- Todo status (reembolsado/pago) é autodeclarado — sem aprovação de terceiro.
+- Nada de comprovante obrigatório no MVP: é pra ficar livre, quase uma
+  anotação organizada, não um formulário.
+- Sem cadastro público: acesso por convite manual do master via Supabase,
+  testando com 1–2 usuários na mesma empresa antes de abrir mais.
+
+## 9. Perguntas em aberto
+
+- Quando validarmos com mais gente, o cadastro continua manual (convite) ou
+  vale a pena abrir um fluxo de solicitação + aprovação dentro do app?
+- Faz sentido notificar (e-mail/push) quando alguém marca algo como pago, ou
+  fica só visível na lista quando a pessoa entrar?
