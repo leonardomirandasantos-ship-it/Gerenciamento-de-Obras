@@ -118,6 +118,8 @@ diretamente.)
 - Parsing por IA mais robusto / voz.
 - Notificações push.
 - Orçado x Realizado (comparar orçamento planejado vs. gasto real).
+- Tela dentro do app pra ver/revogar acesso de usuários (por enquanto isso é
+  feito direto no painel do Supabase).
 
 ## 7. Modelo de dados (rascunho)
 
@@ -174,7 +176,18 @@ validar o modelo:
   próprio master envia manualmente (não é e-mail automático da Supabase).
   Quem convida escolhe se a pessoa entra como `master` ou `membro`.
 
-## 10. Perguntas em aberto
+## 10. Decisões já fechadas (rodada 3)
+
+- Gestão de acesso (ver quem tem acesso, revogar) **não tem tela no app no
+  MVP** — fica pelo painel do Supabase (Authentication > Users). Apagar o
+  usuário lá já basta: a tabela `usuarios` tem `on delete cascade` ligada ao
+  `auth.users`, então remover o acesso limpa tudo em cascata. Uma tela de
+  gestão de membros dentro do app fica pro roadmap.
+- Prioridade agora é fechar o funcional do MVP (feed de lançamentos por obra
+  + pendências/pagamentos) antes de investir em visual — "funcional primeiro,
+  bonito depois".
+
+## 11. Perguntas em aberto
 
 - Quando validarmos com mais gente, o cadastro continua manual (convite) ou
   vale a pena abrir um fluxo de solicitação + aprovação dentro do app?
