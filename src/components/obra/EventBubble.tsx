@@ -12,7 +12,7 @@ export function EventBubble({
   const naoClassificado = evento.kind === "unclassified";
 
   return (
-    <div className="group flex max-w-md flex-col gap-2 rounded-bubble rounded-tl-sm bg-surface p-3 shadow-sm">
+    <div className="flex max-w-md flex-col gap-2 rounded-bubble rounded-tl-sm bg-surface p-3 shadow-sm">
       <div className="flex items-center justify-between gap-2">
         <span
           className="rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
@@ -20,11 +20,7 @@ export function EventBubble({
         >
           {RÓTULO_TIPO[evento.kind]}
         </span>
-        <button
-          type="button"
-          onClick={onEditar}
-          className="text-[11px] text-ink-soft underline opacity-0 group-hover:opacity-100"
-        >
+        <button type="button" onClick={onEditar} className="text-[11px] text-ink-soft underline">
           editar
         </button>
       </div>
