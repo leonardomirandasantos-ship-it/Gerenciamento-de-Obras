@@ -1,4 +1,5 @@
 import { compararComChecklist, extrairItensDeLista, pareceMesmaLista } from "./checklist";
+import { extrairDataMencionada, formatarData } from "./datas";
 import type {
   CasoSugestao,
   ChecklistPayload,
@@ -17,37 +18,14 @@ export type Sugestao = {
   acaoLabel: string;
   /** Segunda ação de 1 toque, quando a escolha é binária (ex.: prestador/fornecedor). */
   acaoAlternativaLabel?: string;
+  /** Chips de 1 toque, quando a escolha é entre várias opções simples. */
+  opcoes?: { label: string; valor: string }[];
+  /** Pede valor/favorecido direto no cartão (pagamento sem dados). */
+  entradaPagamento?: boolean;
   dados: Record<string, unknown>;
 };
 
-const REGEX_DATA = /\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/;
-const REGEX_PALAVRA_DATA = /\bat[ée]\b|\bdia\b|\bprevis[ãa]o\b|\bprazo\b|\bamanh[ãa]\b/i;
 const REGEX_TITULO_VALOR = /^(.{3,40}?)\s*[:–—-]\s*(.+)$/;
-
-/** Data explícita no texto (Fluxo 2 caso C é oportunista: só quando ela cita data). */
-export function extrairDataMencionada(texto: string): string | null {
-  const achou = texto.match(REGEX_DATA);
-  if (!achou) return null;
-
-  const [, diaBruto, mesBruto, anoBruto] = achou;
-  const dia = Number(diaBruto);
-  const mes = Number(mesBruto);
-  if (dia < 1 || dia > 31 || mes < 1 || mes > 12) return null;
-
-  // Evita falso positivo em fração de medida ("cotovelo 3/4", "cano 1 1/4"):
-  // só aceita com dia de 2 dígitos, ano explícito ou palavra de tempo por perto.
-  const pareceData =
-    diaBruto.length === 2 || Boolean(anoBruto) || REGEX_PALAVRA_DATA.test(texto);
-  if (!pareceData) return null;
-
-  const ano = anoBruto
-    ? anoBruto.length === 2
-      ? `20${anoBruto}`
-      : anoBruto
-    : `${new Date().getFullYear()}`;
-
-  return `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
-}
 
 export function extrairTituloEValor(texto: string): { title: string; value: string } {
   const primeiraLinha = texto.split("\n")[0].trim();
@@ -61,6 +39,26 @@ export function extrairTituloEValor(texto: string): { title: string; value: stri
     title: primeiraLinha.slice(0, 40),
     value: texto.trim(),
   };
+}
+
+/**
+ * Quando há muitas sugestões, o que aparece primeiro importa. Fusão de status
+ * e prazo vêm na frente porque fecham loop que a vida real deixou aberto;
+ * "virar checklist" vai por último porque o card da lista já oferece isso.
+ */
+const PRIORIDADE: Record<CasoSugestao, number> = {
+  B_status: 0,
+  C_data: 1,
+  H_pagamento_incompleto: 2,
+  E_prestador: 3,
+  D_decisao: 4,
+  F_classificar: 5,
+  G_fechar_dia: 6,
+  A_checklist: 7,
+};
+
+export function ordenarPorPrioridade(sugestoes: Sugestao[]): Sugestao[] {
+  return [...sugestoes].sort((a, b) => PRIORIDADE[a.caso] - PRIORIDADE[b.caso]);
 }
 
 function casoSilenciado(caso: CasoSugestao, registros: SugestaoRegistro[]): boolean {
@@ -109,7 +107,10 @@ export function detectarSugestoes(
           .filter((par) => pareceMesmaLista(par.similaridade))
           .sort((a, b) => b.similaridade.proporcao - a.similaridade.proporcao)[0];
 
+        let ofereceu = false;
+
         if (checklistParecido && !casoSilenciado("B_status", registros) && !jaResolvida("B_status", evento.id, registros)) {
+          ofereceu = true;
           const titulo = (checklistParecido.checklist.payload as ChecklistPayload).title ?? "checklist";
           sugestoes.push({
             caso: "B_status",
@@ -125,6 +126,7 @@ export function detectarSugestoes(
           !casoSilenciado("A_checklist", registros) &&
           !jaResolvida("A_checklist", evento.id, registros)
         ) {
+          ofereceu = true;
           sugestoes.push({
             caso: "A_checklist",
             eventoId: evento.id,
@@ -135,7 +137,10 @@ export function detectarSugestoes(
             dados: { itens, rawText: texto },
           });
         }
-        continue;
+
+        // Só encerra aqui se já ofereci algo pra essa lista; senão deixo seguir
+        // para o caso da data ("comprar cimento até 20/09" precisa virar prazo).
+        if (ofereceu) continue;
       }
     }
 
@@ -155,6 +160,31 @@ export function detectarSugestoes(
           porque: "Fica fácil consultar depois, sem procurar na conversa.",
           acaoLabel: "Fixar decisão",
           dados: { title, value },
+        });
+        continue;
+      }
+    }
+
+    if (evento.kind === "E7_pagamento") {
+      const pagamento = evento.payload as { amount?: number; payeeName?: string };
+      const faltaDado = pagamento.amount === undefined || !pagamento.payeeName;
+
+      if (
+        faltaDado &&
+        !casoSilenciado("H_pagamento_incompleto", registros) &&
+        !jaResolvida("H_pagamento_incompleto", evento.id, registros)
+      ) {
+        sugestoes.push({
+          caso: "H_pagamento_incompleto",
+          eventoId: evento.id,
+          gatilho: "Vi que é um pagamento, mas faltou um dado",
+          proposta: pagamento.amount === undefined
+            ? "Quanto foi e pra quem?"
+            : "Pra quem foi esse pagamento?",
+          porque: "Com valor e favorecido, ele entra no total por pessoa do dash.",
+          acaoLabel: "Salvar",
+          entradaPagamento: true,
+          dados: { amount: pagamento.amount, payeeName: pagamento.payeeName },
         });
         continue;
       }
@@ -183,6 +213,32 @@ export function detectarSugestoes(
       }
     }
 
+    // Nada é descartado (D3), mas também não fica órfão: ofereço classificar
+    // em 1 toque o que a heurística não deu conta.
+    if (
+      evento.kind === "unclassified" &&
+      !casoSilenciado("F_classificar", registros) &&
+      !jaResolvida("F_classificar", evento.id, registros)
+    ) {
+      sugestoes.push({
+        caso: "F_classificar",
+        eventoId: evento.id,
+        gatilho: "Não consegui identificar isso sozinho",
+        proposta: "O que é esse registro?",
+        porque: "Classificando, ele aparece na aba certa (pendências, dash, decisões).",
+        acaoLabel: "Classificar",
+        opcoes: [
+          { label: "Material", valor: "E1_lista" },
+          { label: "Pagamento", valor: "E7_pagamento" },
+          { label: "Decisão", valor: "E3_decisao" },
+          { label: "Foto/registro", valor: "E4_documentacao" },
+          { label: "Orçamento", valor: "E8_orcamento" },
+        ],
+        dados: {},
+      });
+      continue;
+    }
+
     const data = extrairDataMencionada(texto);
     const jaTemData = Boolean((evento.payload as { date?: string }).date);
     if (
@@ -195,7 +251,7 @@ export function detectarSugestoes(
         caso: "C_data",
         eventoId: evento.id,
         gatilho: "Você citou uma data",
-        proposta: `Marcar ${new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR")} como prazo disso?`,
+        proposta: `Marcar ${formatarData(data)} como prazo disso?`,
         porque: "Aparece no calendário da obra, sem você cadastrar tarefa.",
         acaoLabel: "Marcar prazo",
         dados: { date: data },

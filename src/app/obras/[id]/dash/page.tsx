@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { carregarEventosComAnexos } from "@/lib/carregarEventos";
 import { agruparPorFavorecido, formatarReais, totalPago, type Favorecido } from "@/lib/pagamento";
 import { RoscaPorFase, type FatiaFase } from "@/components/obra/RoscaPorFase";
+import { PagamentosEditaveis } from "@/components/obra/PagamentosEditaveis";
 import type { ChecklistPayload, Fase } from "@/lib/types";
 
 export default async function DashPage({ params }: { params: Promise<{ id: string }> }) {
@@ -95,6 +96,13 @@ export default async function DashPage({ params }: { params: Promise<{ id: strin
           </ul>
         )}
       </section>
+
+      {pagamentos.length > 0 && (
+        <section className="space-y-3 rounded-card border border-line bg-surface p-4">
+          <h2 className="text-sm font-semibold text-ink">Pagamentos registrados</h2>
+          <PagamentosEditaveis pagamentos={pagamentos} fases={(fases ?? []) as Fase[]} />
+        </section>
+      )}
 
       <div className="flex gap-3">
         <section className="flex flex-1 items-center justify-between rounded-card border border-line bg-surface p-4">

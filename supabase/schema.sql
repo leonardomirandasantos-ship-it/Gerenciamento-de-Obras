@@ -97,7 +97,9 @@ create table sugestoes (
   id uuid primary key default gen_random_uuid(),
   obra_id uuid not null references obras(id) on delete cascade,
   evento_id uuid references eventos(id) on delete cascade,
-  caso text not null check (caso in ('A_checklist', 'B_status', 'C_data', 'D_decisao', 'E_prestador', 'G_fechar_dia')),
+  -- Sem check constraint de propósito: a engine de sugestão ganha casos novos
+  -- com frequência e o valor é validado no código (ver src/lib/suggestions.ts).
+  caso text not null,
   estado text not null default 'detected' check (estado in ('detected', 'offered', 'accepted', 'ignored', 'silenced')),
   trigger_desc text,
   proposta text,

@@ -1,3 +1,4 @@
+import { extrairDataMencionada } from "./datas";
 import type { ChecklistItem } from "./types";
 
 const REGEX_BULLET = /^[-*•·]\s*/;
@@ -42,12 +43,15 @@ export function parseItemComStatus(linha: string): ChecklistItem {
     texto = limpa.replace(REGEX_STATUS_FALTA, "").trim();
   }
 
+  // "comprar cimento até 20/09" já nasce com prazo no item.
+  const date = extrairDataMencionada(limpa) ?? undefined;
+
   const comNota = texto.match(REGEX_NOTA);
   if (comNota) {
-    return { text: comNota[1].trim(), status, note: comNota[2].trim() };
+    return { text: comNota[1].trim(), status, note: comNota[2].trim(), date };
   }
 
-  return { text: texto, status };
+  return { text: texto, status, date };
 }
 
 export function itensParaChecklist(texto: string): ChecklistItem[] {

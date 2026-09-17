@@ -118,7 +118,9 @@ export function ComposerInput({ obraId }: { obraId: string }) {
         value={texto}
         onChange={(e) => setTexto(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+          // Enter = nova linha (ela escreve listas de várias linhas o tempo
+          // todo). Enviar é só pelo botão — ou Cmd/Ctrl+Enter no teclado.
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
             e.preventDefault();
             enviarTexto();
           }

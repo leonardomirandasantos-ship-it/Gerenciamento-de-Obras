@@ -10,9 +10,34 @@ export type PagamentoPayload = {
 };
 
 const REGEX_VALOR =
-  /r?\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+(?:[.,]\d{2})?)|(?:paguei|pago|valor|pix(?:\s+de)?)\s*(?:r?\$\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+(?:[.,]\d{2})?)/i;
+  /r?\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+(?:[.,]\d{2})?)|(?:paguei|pagamos|pago|adiantei|transferi|depositei|valor|pix(?:\s+de)?)\s*(?:r?\$\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+(?:[.,]\d{2})?)/i;
+
+// Nome vem quase sempre em minúscula no uso real ("paguei 200 para armando
+// pintor"), então não exigimos maiúscula — no máximo 3 palavras, parando na
+// primeira pontuação.
 const REGEX_FAVORECIDO =
-  /\b(?:pro|pra|para|favorecido:?|recebedor:?)\s+([A-ZÀ-Ý][\wà-ÿ]*(?:\s+(?:d[aeo]s?\s+)?[A-ZÀ-Ý][\wà-ÿ]*)*)/;
+  /\b(?:pro|pra|para|ao|à|favorecido:?|recebedor:?)\s+([\p{L}][\p{L}à-ÿ]*(?:\s+(?:d[aeo]s?\s+)?[\p{L}][\p{L}à-ÿ]*){0,2})/iu;
+
+/** Palavras que indicam que o que vem depois de "pra/para" não é pessoa. */
+const NAO_E_NOME = new Set([
+  "comprar",
+  "pagar",
+  "buscar",
+  "levar",
+  "fazer",
+  "terminar",
+  "entregar",
+  "obra",
+  "casa",
+  "material",
+  "cimento",
+  "hoje",
+  "amanha",
+  "amanhã",
+  "sexta",
+  "segunda",
+  "dia",
+]);
 
 function paraNumero(bruto: string): number | null {
   const normalizado = bruto.replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".");
@@ -32,7 +57,17 @@ export function extrairDadosPagamento(texto: string): PagamentoPayload {
 
   const achouFavorecido = texto.match(REGEX_FAVORECIDO);
   if (achouFavorecido) {
-    dados.payeeName = achouFavorecido[1].trim();
+    const bruto = achouFavorecido[1].trim();
+    const palavras = bruto.split(/\s+/);
+    if (!NAO_E_NOME.has(palavras[0].toLowerCase())) {
+      dados.payeeName = palavras
+        .map((palavra) =>
+          palavra.length <= 2
+            ? palavra.toLowerCase()
+            : palavra.charAt(0).toUpperCase() + palavra.slice(1).toLowerCase(),
+        )
+        .join(" ");
+    }
   }
 
   return dados;

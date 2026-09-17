@@ -42,7 +42,9 @@ export type CasoSugestao =
   | "C_data"
   | "D_decisao"
   | "E_prestador"
-  | "G_fechar_dia";
+  | "F_classificar"
+  | "G_fechar_dia"
+  | "H_pagamento_incompleto";
 
 export type EstadoSugestao = "detected" | "offered" | "accepted" | "ignored" | "silenced";
 

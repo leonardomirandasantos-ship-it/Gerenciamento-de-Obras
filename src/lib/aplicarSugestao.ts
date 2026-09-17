@@ -19,17 +19,76 @@ export async function ignorarSugestao(sugestao: Sugestao, obraId: string) {
   await registrar(sugestao, obraId, "ignored");
 }
 
+/**
+ * Cria o checklist a partir de uma lista. Usado tanto pela sugestão (caso A)
+ * quanto pelo botão direto no card da lista, na aba de pendências.
+ */
+export async function criarChecklistDeLista(evento: Evento, obraId: string) {
+  const supabase = createClient();
+  const rawText = evento.raw_text ?? "";
+  const itens = itensParaChecklist(rawText);
+
+  const payload: ChecklistPayload = {
+    title: `Lista de ${new Date(evento.received_at).toLocaleDateString("pt-BR")}`,
+    sourceListDate: evento.received_at,
+    items: itens,
+    statusHistory: [],
+  };
+
+  const { data: checklist } = await supabase
+    .from("eventos")
+    .insert({
+      obra_id: obraId,
+      kind: "E2_checklist",
+      confidence: 1,
+      phase_id: evento.phase_id,
+      payload,
+    })
+    .select("id")
+    .single();
+
+  if (checklist) {
+    const payloadLista: ListaPayload = {
+      ...(evento.payload as ListaPayload),
+      linkedChecklistId: checklist.id,
+    };
+    await supabase.from("eventos").update({ payload: payloadLista }).eq("id", evento.id);
+  }
+}
+
 export async function aplicarSugestao(
   sugestao: Sugestao,
   evento: Evento,
   obraId: string,
-  variante?: "prestador" | "fornecedor",
+  opcao?: string,
+  extra?: { amount?: number; payeeName?: string },
 ) {
   const supabase = createClient();
 
+  if (sugestao.caso === "F_classificar" && opcao) {
+    await supabase
+      .from("eventos")
+      .update({ kind: opcao, confidence: 1, edited: true })
+      .eq("id", evento.id);
+  }
+
+  if (sugestao.caso === "H_pagamento_incompleto") {
+    await supabase
+      .from("eventos")
+      .update({
+        payload: {
+          ...evento.payload,
+          amount: extra?.amount,
+          payeeName: extra?.payeeName,
+        },
+        edited: true,
+      })
+      .eq("id", evento.id);
+  }
+
   if (sugestao.caso === "E_prestador") {
     const nome = String(sugestao.dados.payeeName);
-    const tipo = variante ?? "prestador";
+    const tipo = opcao === "fornecedor" ? "fornecedor" : "prestador";
 
     const { data: favorecido } = await supabase
       .from("favorecidos")
@@ -47,36 +106,7 @@ export async function aplicarSugestao(
   }
 
   if (sugestao.caso === "A_checklist") {
-    const rawText = String(sugestao.dados.rawText ?? evento.raw_text ?? "");
-    const itens = itensParaChecklist(rawText);
-    const titulo = `Lista de ${new Date(evento.received_at).toLocaleDateString("pt-BR")}`;
-
-    const payload: ChecklistPayload = {
-      title: titulo,
-      sourceListDate: evento.received_at,
-      items: itens,
-      statusHistory: [],
-    };
-
-    const { data: checklist } = await supabase
-      .from("eventos")
-      .insert({
-        obra_id: obraId,
-        kind: "E2_checklist",
-        confidence: 1,
-        phase_id: evento.phase_id,
-        payload,
-      })
-      .select("id")
-      .single();
-
-    if (checklist) {
-      const payloadLista: ListaPayload = {
-        ...(evento.payload as ListaPayload),
-        linkedChecklistId: checklist.id,
-      };
-      await supabase.from("eventos").update({ payload: payloadLista }).eq("id", evento.id);
-    }
+    await criarChecklistDeLista(evento, obraId);
   }
 
   if (sugestao.caso === "B_status") {
