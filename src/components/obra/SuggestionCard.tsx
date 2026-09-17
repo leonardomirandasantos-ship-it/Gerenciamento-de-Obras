@@ -42,6 +42,7 @@ export function SuggestionCard({
     // A ação em si foi aplicada; só o registro do "já resolvi" falhou — então
     // a sugestão voltaria. Melhor avisar do que ela achar que não funcionou.
     if (falha) {
+      console.error("[sugestao] não gravou o 'accepted':", falha);
       setErro("Apliquei, mas não consegui marcar como resolvida.");
     }
     router.refresh();
@@ -56,6 +57,9 @@ export function SuggestionCard({
     // Sem isso a sugestão voltava calada e ela clicava em "agora não" de novo,
     // sem entender por que não obedecia.
     if (falha) {
+      // O motivo real no console: o erro visível é para ela, este é para
+      // quem for investigar (foi um check constraint velho no banco).
+      console.error("[sugestao] não gravou o 'ignored':", falha);
       setErro("Não consegui guardar isso — a sugestão vai voltar.");
       return;
     }

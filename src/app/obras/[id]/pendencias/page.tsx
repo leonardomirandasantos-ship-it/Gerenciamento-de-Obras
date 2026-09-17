@@ -2,10 +2,10 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEventosComAnexos } from "@/lib/carregarEventos";
 import { detectarSugestoes, ordenarPorPrioridade } from "@/lib/suggestions";
-import { listasAbertas } from "@/lib/pendencias";
+import { itensAComprar, listasAbertas } from "@/lib/pendencias";
 import { CardDeLista } from "@/components/obra/CardDeLista";
 import { PrazosLista } from "@/components/obra/PrazosLista";
-import { SuggestionCard } from "@/components/obra/SuggestionCard";
+import { SugestoesParaOrganizar } from "@/components/obra/SugestoesParaOrganizar";
 import type { ChecklistPayload, SugestaoRegistro } from "@/lib/types";
 
 export default async function PendenciasPage({
@@ -23,6 +23,7 @@ export default async function PendenciasPage({
 
   // Listas e checklists moram na MESMA seção: para quem usa é a mesma coisa (D76).
   const listas = listasAbertas(eventos);
+  const aComprar = itensAComprar(eventos);
   const checklists = eventos.filter((evento) => evento.kind === "E2_checklist");
 
   // Lista com prazo NÃO entra aqui: ela já sobe no topo da seção "Listas",
@@ -46,10 +47,11 @@ export default async function PendenciasPage({
       .map((item) => ({ item, checklist })),
   );
 
-  // Limito a 3: com dados reais a engine detecta 10+ e vira ruído (D25).
+  // Limito a 5 aqui (o componente mostra 1 por vez): com dados reais a engine
+  // detecta 10+ e vira ruído (D25/D122).
   const sugestoes = ordenarPorPrioridade(
     detectarSugestoes(eventos, (registros ?? []) as SugestaoRegistro[]),
-  ).slice(0, 3);
+  ).slice(0, 5);
   const porEvento = new Map(eventos.map((evento) => [evento.id, evento]));
 
   if (listas.length === 0 && comPrazo.length === 0 && sugestoes.length === 0) {
@@ -66,43 +68,33 @@ export default async function PendenciasPage({
     <div className="flex-1 space-y-6 overflow-y-auto p-4 pb-28">
       {(comPrazo.length > 0 || itensComPrazo.length > 0) && (
         <section className="space-y-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+          <h2 className="text-micro font-semibold uppercase tracking-wide text-ink-soft">
             Com prazo
           </h2>
           <PrazosLista eventos={comPrazo} itens={itensComPrazo} />
         </section>
       )}
 
-      {sugestoes.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-            Sugestões
-          </h2>
-          {sugestoes.map((sugestao) => {
-            const evento = porEvento.get(sugestao.eventoId);
-            if (!evento) return null;
-            return (
-              <SuggestionCard
-                key={`${sugestao.caso}-${sugestao.eventoId}`}
-                sugestao={sugestao}
-                evento={evento}
-                obraId={id}
-                citarMensagem
-              />
-            );
-          })}
-        </section>
-      )}
-
+      {/* Listas antes das sugestões (D122): lista é o que ela vem ver aqui;
+          sugestão é o app pedindo ajuda, e pedido não passa na frente. */}
       {listas.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-            Listas
-          </h2>
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="text-micro font-semibold uppercase tracking-wide text-ink-soft">
+              Listas
+            </h2>
+            <span className="text-micro text-ink-soft">
+              {aComprar} {aComprar === 1 ? "item em aberto" : "itens em aberto"}
+            </span>
+          </div>
           {listas.map((lista) => (
             <CardDeLista key={lista.id} evento={lista} obraId={id} />
           ))}
         </section>
+      )}
+
+      {sugestoes.length > 0 && (
+        <SugestoesParaOrganizar sugestoes={sugestoes} eventos={porEvento} obraId={id} />
       )}
 
       <Link href={`/obras/${id}/conversa`} className="block pt-2 text-xs text-primary underline">
