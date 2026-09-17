@@ -3,6 +3,7 @@ import { chaveSegura } from "./arquivos";
 import { extrairPrazoDeclarado } from "./datas";
 import { normalizarFavorecido } from "./pagamento";
 import { mimeLimpo } from "./audio";
+import { paraWavMono16k } from "./wav";
 import { kindDoTipo, type Entendimento, type RegistroEntendido } from "./entender";
 import { classificar } from "./classify";
 import { extrairDadosPagamento } from "./pagamento";
@@ -195,6 +196,15 @@ export type ContextoDaObra = {
   ambientes: string[];
 };
 
+/** Mensagem por causa: "falhou" sem motivo obriga a adivinhar (D129). */
+const MOTIVOS: Record<string, string> = {
+  sem_chave: "O áudio está salvo, mas a transcrição ainda não está configurada.",
+  modelo_falhou: "O áudio está salvo, mas o serviço de transcrição recusou o arquivo.",
+  resposta_vazia: "O áudio está salvo, mas a transcrição voltou vazia.",
+  json_invalido: "O áudio está salvo, mas não entendi a resposta da transcrição.",
+  "não autenticado": "Sua sessão expirou. Entre de novo e mande o áudio outra vez.",
+};
+
 export type ResultadoDoAudio = {
   transcricao: string;
   criados: number;
@@ -265,8 +275,23 @@ export async function capturarAudio({
   await supabase.from("anexos").insert({ evento_id: eventoAudio.id, url: path, tipo: "audio" });
 
   // ---------------------------------------------------------- entendimento
+  // O Gemini não aceita `audio/webm`, que é o que o Chrome grava (D128).
+  // Converte para WAV só para a chamada; o original fica guardado como veio.
+  let paraEnviar: Blob;
+  let nomeEnviado: string;
+  try {
+    paraEnviar = await paraWavMono16k(blob);
+    nomeEnviado = nome.replace(/\.[^.]+$/, ".wav");
+  } catch {
+    return {
+      transcricao: "",
+      criados: 0,
+      aviso: "O áudio está salvo, mas não consegui convertê-lo para transcrever.",
+    };
+  }
+
   const form = new FormData();
-  form.append("arquivo", new File([blob], nome, { type: mimeLimpo(mimeType) }));
+  form.append("arquivo", new File([paraEnviar], nomeEnviado, { type: "audio/wav" }));
   form.append("hoje", new Date().toISOString().slice(0, 10));
   form.append("fases", contexto.fases.join(", "));
   form.append("favorecidos", contexto.favorecidos.join(", "));
@@ -281,10 +306,8 @@ export async function capturarAudio({
       entendimento = (await resposta.json()) as Entendimento;
     } else {
       const corpo = await resposta.json().catch(() => ({}));
-      aviso =
-        corpo?.erro === "sem_chave"
-          ? "O áudio está salvo, mas a transcrição ainda não está configurada."
-          : "O áudio está salvo, mas não consegui entender o que foi dito.";
+      console.error("[audio] entender falhou:", resposta.status, corpo);
+      aviso = MOTIVOS[corpo?.erro as string] ?? `O áudio está salvo, mas a transcrição falhou (${resposta.status}).`;
     }
   } catch {
     aviso = "O áudio está salvo, mas não consegui falar com o serviço de transcrição.";

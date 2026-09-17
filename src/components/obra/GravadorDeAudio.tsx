@@ -16,10 +16,13 @@ const LIMITE_SEGUNDOS = 180;
 export function GravadorDeAudio({
   onPronto,
   onErro,
+  onGravandoChange,
   desabilitado,
 }: {
   onPronto: (blob: Blob, mimeType: string, segundos: number) => void;
   onErro: (mensagem: string) => void;
+  /** Avisa o composer para sair de cena enquanto ela fala (D130). */
+  onGravandoChange?: (gravando: boolean) => void;
   desabilitado?: boolean;
 }) {
   const [gravando, setGravando] = useState(false);
@@ -76,6 +79,7 @@ export function GravadorDeAudio({
     gravador.onstop = () => {
       trilha.getTracks().forEach((t) => t.stop());
       setGravando(false);
+      onGravandoChange?.(false);
 
       const duracao = segundosRef.current;
       setSegundos(0);
@@ -96,6 +100,7 @@ export function GravadorDeAudio({
     segundosRef.current = 0;
     setSegundos(0);
     setGravando(true);
+    onGravandoChange?.(true);
   }
 
   function cancelar() {

@@ -29,6 +29,7 @@ export function ComposerInput({
   const [enviando, setEnviando] = useState(false);
   const [avisoAudio, setAvisoAudio] = useState<string | null>(null);
   const [gravado, setGravado] = useState(false);
+  const [gravando, setGravando] = useState(false);
   const [falhas, setFalhas] = useState<string[]>([]);
   // Anexo fica "em espera" até ela mandar, para poder escrever o que é — é o
   // modelo do WhatsApp e não cria gate: mandar sem escrever nada continua a
@@ -132,7 +133,7 @@ export function ComposerInput({
         </p>
       )}
 
-      {emEspera.length > 0 && (
+      {emEspera.length > 0 && !gravando && (
         <div className="mb-2 flex flex-wrap gap-2">
           {emEspera.map((file, indice) => (
             <span
@@ -167,15 +168,18 @@ export function ComposerInput({
             e.target.value = "";
           }}
         />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl text-ink-soft active:bg-surface-alt"
-          aria-label="Anexar foto, vídeo ou PDF"
-        >
-          📎
-        </button>
+        {!gravando && (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl text-ink-soft active:bg-surface-alt"
+            aria-label="Anexar foto, vídeo ou PDF"
+          >
+            📎
+          </button>
+        )}
 
+        {!gravando && (
         <textarea
           rows={1}
           placeholder={emEspera.length > 0 ? "Escreve o que é (opcional)" : "Manda aqui..."}
@@ -191,6 +195,7 @@ export function ComposerInput({
           }}
           className="max-h-32 min-h-11 flex-1 resize-none rounded-bubble border border-line bg-surface-alt px-4 py-3 text-base leading-tight text-ink outline-none focus:border-primary"
         />
+        )}
 
         <GravadorDeAudio
           onPronto={enviarAudio}
@@ -198,22 +203,25 @@ export function ComposerInput({
             setAvisoAudio(mensagem);
             setTimeout(() => setAvisoAudio(null), 5000);
           }}
+          onGravandoChange={setGravando}
           desabilitado={gravado || enviando}
         />
 
-        <button
-          type="button"
-          onClick={enviar}
-          disabled={!texto.trim() && emEspera.length === 0}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-lg text-white disabled:opacity-40"
-          aria-label="Enviar"
-        >
-          {enviando ? (
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-          ) : (
-            "➤"
-          )}
-        </button>
+        {!gravando && (
+          <button
+            type="button"
+            onClick={enviar}
+            disabled={!texto.trim() && emEspera.length === 0}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-lg text-white disabled:opacity-40"
+            aria-label="Enviar"
+          >
+            {enviando ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            ) : (
+              "➤"
+            )}
+          </button>
+        )}
       </div>
     </div>
   );
