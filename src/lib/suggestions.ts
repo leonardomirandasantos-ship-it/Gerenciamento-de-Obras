@@ -1,4 +1,5 @@
 import { compararComChecklist, extrairItensDeLista, pareceMesmaLista } from "./checklist";
+import { normalizarFavorecido } from "./pagamento";
 import { extrairDataMencionada, formatarData } from "./datas";
 import { detectarAmbientes } from "./ambientes";
 import type {
@@ -88,9 +89,22 @@ function jaResolvida(
 export function detectarSugestoes(
   eventos: Evento[],
   registros: SugestaoRegistro[],
+  /**
+   * Favorecidos que JÁ têm tipo na obra. Sem isso a pergunta "prestador ou
+   * fornecedor?" era silenciada por evento, e não por pessoa: categorizar o
+   * Vilmar num pagamento não calava a pergunta nos outros pagamentos dele
+   * (D133). Quem já respondeu uma vez não deve responder de novo.
+   */
+  favorecidosComTipo: { name: string; type: string | null }[] = [],
 ): Sugestao[] {
   const sugestoes: Sugestao[] = [];
   const checklists = eventos.filter((e) => e.kind === "E2_checklist");
+
+  const jaTipados = new Set(
+    favorecidosComTipo
+      .filter((favorecido) => Boolean(favorecido.type))
+      .map((favorecido) => normalizarFavorecido(favorecido.name)),
+  );
 
   for (const evento of eventos) {
     const texto = evento.raw_text ?? "";
@@ -190,6 +204,7 @@ export function detectarSugestoes(
         payload.payeeName &&
         !payload.payeeType &&
         !evento.favorecido_id &&
+        !jaTipados.has(normalizarFavorecido(payload.payeeName)) &&
         !casoSilenciado("E_prestador", registros) &&
         !jaResolvida("E_prestador", evento.id, registros)
       ) {

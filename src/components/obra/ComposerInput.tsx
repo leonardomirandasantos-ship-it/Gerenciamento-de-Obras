@@ -69,8 +69,9 @@ export function ComposerInput({
     setAvisoAudio(null);
     onPendente({
       id: crypto.randomUUID(),
-      texto: "🎙️ áudio — transcrevendo…",
+      texto: "🎙️ áudio",
       kind: "E9_audio",
+      nota: "transcrevendo…",
     });
 
     const resultado = await capturarAudio({
@@ -96,11 +97,16 @@ export function ComposerInput({
   async function enviarArquivos(lista: File[], legenda: string) {
     if (enviando) return;
 
+    // A bolha otimista diz "lendo" quando a imagem vai passar pela IA: ela
+    // fica visível durante os ~30s da leitura, igual acontece com o áudio.
+    const vaiLer = lista.some((file) => file.type.startsWith("image/"));
+
     for (const file of lista) {
       onPendente({
         id: crypto.randomUUID(),
         texto: legenda || `📎 ${file.name}`,
         kind: classificarTexto(legenda || file.name).kind,
+        nota: vaiLer && file.type.startsWith("image/") ? "lendo a imagem…" : undefined,
       });
     }
 
@@ -108,14 +114,25 @@ export function ComposerInput({
     setEmEspera([]);
     setEnviando(true);
     setFalhas([]);
-    const { falhas: naoSubiram } = await capturarArquivos({
+    const resultado = await capturarArquivos({
       obraId,
       arquivos: lista,
       faseAtualId,
       legenda,
+      contexto,
     });
-    setFalhas(naoSubiram);
+    setFalhas(resultado.falhas);
     setEnviando(false);
+
+    if (resultado.aviso) setAvisoAudio(resultado.aviso);
+    else if (resultado.entendidos > 0) {
+      setAvisoAudio(
+        `Li a imagem e preenchi ${resultado.entendidos} ${resultado.entendidos === 1 ? "registro" : "registros"}.`,
+      );
+    }
+    if (resultado.aviso || resultado.entendidos > 0) {
+      setTimeout(() => setAvisoAudio(null), 5000);
+    }
     router.refresh();
   }
 

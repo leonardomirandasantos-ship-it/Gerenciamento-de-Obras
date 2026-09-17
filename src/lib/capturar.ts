@@ -120,6 +120,7 @@ export async function capturarArquivos({
   faseAtualId,
   kind,
   legenda,
+  contexto,
 }: {
   obraId: string;
   arquivos: File[];
@@ -127,16 +128,25 @@ export async function capturarArquivos({
   kind?: EventoKind;
   /** O que ela escreveu junto do anexo — vira legenda E entra na classificação. */
   legenda?: string;
-}): Promise<{ falhas: string[] }> {
+  /**
+   * Com contexto, a imagem passa pela IA: comprovante de PIX vira gasto com
+   * valor e favorecido lidos da própria imagem (D134). Sem contexto (ou sem
+   * chave), continua o caminho de antes — legenda e nome do arquivo.
+   */
+  contexto?: ContextoDaObra;
+}): Promise<{ falhas: string[]; entendidos: number; aviso?: string }> {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return { falhas: arquivos.map((file) => file.name) };
+  if (!user) {
+    return { falhas: arquivos.map((file) => file.name), entendidos: 0 };
+  }
 
   const falhas: string[] = [];
-
+  let entendidos = 0;
+  let aviso: string | undefined;
   const descricao = legenda?.trim() ?? "";
 
   for (const file of arquivos) {
@@ -178,16 +188,112 @@ export async function capturarArquivos({
       .select("id")
       .single();
 
-    if (evento) {
-      await supabase.from("anexos").insert({ evento_id: evento.id, url: path, tipo });
-    } else {
+    if (!evento) {
       falhas.push(file.name);
+      continue;
+    }
+
+    await supabase.from("anexos").insert({ evento_id: evento.id, url: path, tipo });
+
+    // Só imagem, e só quando o tipo não foi declarado por ela: se ela disse
+    // que é foto de obra, não cabe a IA discordar.
+    if (tipo === "foto" && contexto && !kind) {
+      const resultado = await entenderImagem(supabase, obraId, faseAtualId, evento.id, file, contexto);
+      entendidos += resultado.aplicados;
+      aviso = aviso ?? resultado.aviso;
     }
   }
 
-  return { falhas };
+  return { falhas, entendidos, aviso };
 }
 
+/**
+ * Aplica o entendimento na própria imagem: o comprovante É a evidência do
+ * pagamento (D5), então ele não vira um registro separado — o evento da foto
+ * passa a ser o gasto. Assunto a mais no mesmo arquivo (nota com material,
+ * por exemplo) vira registro derivado apontando de volta.
+ */
+async function entenderImagem(
+  supabase: ReturnType<typeof createClient>,
+  obraId: string,
+  faseAtualId: string | null,
+  eventoId: string,
+  arquivo: File,
+  contexto: ContextoDaObra,
+): Promise<{ aplicados: number; aviso?: string }> {
+  const { entendimento, aviso } = await pedirEntendimento(arquivo, contexto);
+  if (!entendimento) return { aplicados: 0, aviso };
+
+  const registros = entendimento.registros ?? [];
+  if (registros.length === 0) return { aplicados: 0 };
+
+  const [principal, ...extras] = registros;
+  const kind = kindDoTipo(principal.tipo);
+  if (!kind) return { aplicados: 0 };
+
+  const payload: Record<string, unknown> = { fileName: arquivo.name };
+  if (kind === "E7_pagamento" || kind === "E8_orcamento") {
+    if (typeof principal.valor === "number") payload.amount = principal.valor;
+    if (principal.favorecido) payload.payeeName = principal.favorecido;
+  }
+  if (principal.prazo) payload.date = principal.prazo;
+
+  const vinculo =
+    kind === "E7_pagamento"
+      ? await ligarFavorecidoExistente(supabase, obraId, principal.favorecido)
+      : {};
+
+  await supabase
+    .from("eventos")
+    .update({
+      kind,
+      confidence: 0.9,
+      favorecido_id: vinculo.favorecido_id ?? null,
+      caption: principal.texto,
+      edited: true,
+      payload: semVazios({ ...payload, payeeType: vinculo.payeeType }),
+    })
+    .eq("id", eventoId);
+
+  const derivados: string[] = [];
+  for (const extra of extras) {
+    const id = await criarDerivado(supabase, obraId, faseAtualId, eventoId, extra);
+    if (id) derivados.push(id);
+  }
+
+  return { aplicados: 1 + derivados.length };
+}
+
+
+/**
+ * Pede o entendimento do arquivo à rota serverless. Serve áudio e imagem: o
+ * prompt tem os dois ramos e o schema de resposta é o mesmo (D134).
+ */
+async function pedirEntendimento(
+  arquivo: File,
+  contexto: ContextoDaObra,
+): Promise<{ entendimento: Entendimento | null; aviso?: string }> {
+  const form = new FormData();
+  form.append("arquivo", arquivo);
+  form.append("hoje", new Date().toISOString().slice(0, 10));
+  form.append("fases", contexto.fases.join(", "));
+  form.append("favorecidos", contexto.favorecidos.join(", "));
+  form.append("ambientes", contexto.ambientes.join(", "));
+
+  try {
+    const resposta = await fetch("/api/entender", { method: "POST", body: form });
+    if (resposta.ok) return { entendimento: (await resposta.json()) as Entendimento };
+
+    const corpo = await resposta.json().catch(() => ({}));
+    console.error("[entender] falhou:", resposta.status, corpo);
+    return {
+      entendimento: null,
+      aviso: MOTIVOS[corpo?.erro as string] ?? `A leitura falhou (${resposta.status}).`,
+    };
+  } catch {
+    return { entendimento: null, aviso: "Não consegui falar com o serviço de leitura." };
+  }
+}
 
 /** Contexto da obra que ajuda o modelo a reusar nome e ambiente já existentes. */
 export type ContextoDaObra = {
@@ -290,30 +396,14 @@ export async function capturarAudio({
     };
   }
 
-  const form = new FormData();
-  form.append("arquivo", new File([paraEnviar], nomeEnviado, { type: "audio/wav" }));
-  form.append("hoje", new Date().toISOString().slice(0, 10));
-  form.append("fases", contexto.fases.join(", "));
-  form.append("favorecidos", contexto.favorecidos.join(", "));
-  form.append("ambientes", contexto.ambientes.join(", "));
+  const { entendimento, aviso } = await pedirEntendimento(
+    new File([paraEnviar], nomeEnviado, { type: "audio/wav" }),
+    contexto,
+  );
 
-  let entendimento: Entendimento | null = null;
-  let aviso: string | undefined;
-
-  try {
-    const resposta = await fetch("/api/entender", { method: "POST", body: form });
-    if (resposta.ok) {
-      entendimento = (await resposta.json()) as Entendimento;
-    } else {
-      const corpo = await resposta.json().catch(() => ({}));
-      console.error("[audio] entender falhou:", resposta.status, corpo);
-      aviso = MOTIVOS[corpo?.erro as string] ?? `O áudio está salvo, mas a transcrição falhou (${resposta.status}).`;
-    }
-  } catch {
-    aviso = "O áudio está salvo, mas não consegui falar com o serviço de transcrição.";
+  if (!entendimento) {
+    return { transcricao: "", criados: 0, aviso: aviso ? `O áudio está salvo. ${aviso}` : undefined };
   }
-
-  if (!entendimento) return { transcricao: "", criados: 0, aviso };
 
   const derivados: string[] = [];
 
@@ -342,6 +432,7 @@ async function criarDerivado(
   supabase: ReturnType<typeof createClient>,
   obraId: string,
   faseAtualId: string | null,
+  /** O áudio ou a imagem de onde este registro saiu. */
   audioId: string,
   registro: RegistroEntendido,
 ): Promise<string | null> {
@@ -351,7 +442,7 @@ async function criarDerivado(
   const texto = (registro.itens?.length ? registro.itens.join("\n") : registro.texto)?.trim();
   if (!texto) return null;
 
-  const payload: Record<string, unknown> = { sourceAudioEventId: audioId };
+  const payload: Record<string, unknown> = { sourceCaptureEventId: audioId, sourceAudioEventId: audioId };
 
   if (kind === "E7_pagamento" || kind === "E8_orcamento") {
     if (typeof registro.valor === "number") payload.amount = registro.valor;

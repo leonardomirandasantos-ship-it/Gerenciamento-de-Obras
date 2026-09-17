@@ -17,9 +17,10 @@ export default async function PendenciasPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [eventos, { data: registros }] = await Promise.all([
+  const [eventos, { data: registros }, { data: favorecidos }] = await Promise.all([
     carregarEventosComAnexos(supabase, id, undefined, { assinar: false }),
     supabase.from("sugestoes").select("*").eq("obra_id", id),
+    supabase.from("favorecidos").select("name, type").eq("obra_id", id),
   ]);
 
   // Listas e checklists moram na MESMA seção: para quem usa é a mesma coisa (D76).
@@ -52,7 +53,7 @@ export default async function PendenciasPage({
   // Limito a 5 aqui (o componente mostra 1 por vez): com dados reais a engine
   // detecta 10+ e vira ruído (D25/D122).
   const sugestoes = ordenarPorPrioridade(
-    detectarSugestoes(eventos, (registros ?? []) as SugestaoRegistro[]),
+    detectarSugestoes(eventos, (registros ?? []) as SugestaoRegistro[], favorecidos ?? []),
   ).slice(0, 5);
   const porEvento = new Map(eventos.map((evento) => [evento.id, evento]));
 

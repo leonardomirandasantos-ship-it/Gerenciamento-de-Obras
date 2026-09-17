@@ -12,7 +12,8 @@ import type { ContextoDaObra } from "@/lib/capturar";
 import type { Sugestao } from "@/lib/suggestions";
 import type { Evento, EventoKind, Fase } from "@/lib/types";
 
-export type Pendente = { id: string; texto: string; kind: EventoKind };
+/** `nota` substitui o "enviando…" quando a espera tem outro motivo. */
+export type Pendente = { id: string; texto: string; kind: EventoKind; nota?: string };
 
 export function ConversaClient({
   obraId,
@@ -118,7 +119,7 @@ export function ConversaClient({
               <div className="flex max-w-[85%] flex-col gap-2 rounded-bubble rounded-tl-sm bg-surface p-3 opacity-60 shadow-card">
                 <ChipTipo kind={pendente.kind} />
                 <p className="whitespace-pre-wrap text-body text-ink">{pendente.texto}</p>
-                <p className="text-micro text-ink-soft">enviando…</p>
+                <p className="text-micro text-ink-soft">{pendente.nota ?? "enviando…"}</p>
               </div>
             </li>
           ))}

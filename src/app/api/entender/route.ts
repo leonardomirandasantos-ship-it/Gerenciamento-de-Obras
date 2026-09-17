@@ -18,14 +18,26 @@ import { ESQUEMA_ENTENDIMENTO, montarPrompt, type Entendimento } from "@/lib/ent
  */
 export const maxDuration = 60;
 
+const MODELO_BOM = process.env.GEMINI_MODEL ?? "gemini-3.5-flash";
+const MODELO_RAPIDO = "gemini-3.1-flash-lite";
+
 /**
- * Primeiro o modelo bom, depois um mais rápido como rede de segurança.
- * Medido: o 3.5-flash transcreveu "rejunte cinza ártico" e "argamassa AC3"
- * corretamente e separou os 3 assuntos; o flash-lite respondeu em 6s mas
- * ouviu "argamassa adesiva extra" e classificou uma decisão como gasto.
- * Qualidade primeiro; o lite só entra se o principal estiver fora do ar.
+ * A ordem depende do que está entrando, porque o gargalo é diferente:
+ *
+ * ÁUDIO precisa de qualidade de transcrição. Medido no mesmo áudio: o
+ * 3.5-flash entendeu "rejunte cinza ártico" e "argamassa AC3" e separou os 3
+ * assuntos; o lite ouviu "argamassa adesiva extra" e classificou uma decisão
+ * como gasto. Então o bom vem primeiro, e o lite é só rede de segurança.
+ *
+ * IMAGEM é o contrário. Na mesma foto de obra: o lite respondeu em 3,2s e o
+ * bom em 43,2s, com a MESMA classificação — e foto é a captura mais comum,
+ * então 40s e cota a mais por foto sairia caro sem ganho. O lite vem primeiro.
  */
-const MODELOS = [process.env.GEMINI_MODEL ?? "gemini-3.5-flash", "gemini-3.1-flash-lite"];
+function modelosPara(mime: string): string[] {
+  return mime.startsWith("image/")
+    ? [MODELO_RAPIDO, MODELO_BOM]
+    : [MODELO_BOM, MODELO_RAPIDO];
+}
 const LIMITE_BYTES = 20 * 1024 * 1024;
 
 /**
@@ -110,7 +122,7 @@ export async function POST(request: Request) {
   const comecou = Date.now();
   let resposta: Response | null = null;
 
-  for (const modelo of MODELOS) {
+  for (const modelo of modelosPara(arquivo.type)) {
     const restante = TETO_TOTAL_MS - (Date.now() - comecou);
     if (restante < MINIMO_PARA_TENTAR_MS) {
       console.error("[entender] sem tempo para tentar", modelo);

@@ -19,10 +19,14 @@ export default async function ConversaPage({
       supabase.from("fases").select("*").eq("obra_id", id).order("order", { ascending: true }),
       supabase.from("sugestoes").select("*").eq("obra_id", id),
       supabase.from("obras").select("current_phase_id").eq("id", id).single(),
-      supabase.from("favorecidos").select("name").eq("obra_id", id),
+      supabase.from("favorecidos").select("name, type").eq("obra_id", id),
     ]);
 
-  const sugestoes = detectarSugestoes(eventos, (registros ?? []) as SugestaoRegistro[]);
+  const sugestoes = detectarSugestoes(
+    eventos,
+    (registros ?? []) as SugestaoRegistro[],
+    favorecidos ?? [],
+  );
 
   // O que a obra já usa vai junto no pedido de transcrição: assim o modelo
   // devolve "José Costa" e "Banheiros" em vez de inventar variações (D125).

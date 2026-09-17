@@ -1,5 +1,6 @@
 import { createClient } from "./supabase/client";
 import { fundirStatus, itensParaChecklist } from "./checklist";
+import { normalizarFavorecido, type PagamentoPayload } from "./pagamento";
 import type { Sugestao } from "./suggestions";
 import type { ChecklistPayload, Evento, ListaPayload } from "./types";
 
@@ -124,13 +125,29 @@ export async function aplicarSugestao(
       .select("id")
       .single();
 
-    await supabase
+    // Todos os pagamentos dessa pessoa, não só este: senão os outros
+    // continuariam perguntando a mesma coisa (D133).
+    const { data: pagamentos } = await supabase
       .from("eventos")
-      .update({
-        favorecido_id: favorecido?.id ?? null,
-        payload: { ...evento.payload, payeeType: tipo },
-      })
-      .eq("id", evento.id);
+      .select("id, payload")
+      .eq("obra_id", obraId)
+      .eq("kind", "E7_pagamento")
+      .eq("deleted", false);
+
+    const chave = normalizarFavorecido(nome);
+
+    for (const pagamento of pagamentos ?? []) {
+      const payload = pagamento.payload as PagamentoPayload;
+      if (!payload.payeeName || normalizarFavorecido(payload.payeeName) !== chave) continue;
+
+      await supabase
+        .from("eventos")
+        .update({
+          favorecido_id: favorecido?.id ?? null,
+          payload: { ...payload, payeeType: tipo },
+        })
+        .eq("id", pagamento.id);
+    }
   }
 
   if (sugestao.caso === "B_status") {
