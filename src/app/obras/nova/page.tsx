@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { caminhoDaCapa } from "@/lib/fotoObra";
 
 export default function NovaObraPage() {
   const router = useRouter();
@@ -15,6 +17,19 @@ export default function NovaObraPage() {
   const [details, setDetails] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
+
+  // A capa é escolhida aqui, mas só sobe DEPOIS de criar a obra: o caminho no
+  // Storage inclui o id dela, que ainda não existe (D140). Até lá o arquivo
+  // fica em memória e a prévia é um object URL.
+  const [capa, setCapa] = useState<File | null>(null);
+  const [previa, setPrevia] = useState<string | null>(null);
+  const capaInputRef = useRef<HTMLInputElement>(null);
+
+  function escolherCapa(file: File | null) {
+    if (previa) URL.revokeObjectURL(previa);
+    setCapa(file);
+    setPrevia(file ? URL.createObjectURL(file) : null);
+  }
 
   async function criar(e: React.FormEvent) {
     e.preventDefault();
@@ -35,13 +50,33 @@ export default function NovaObraPage() {
       .select("id")
       .single();
 
-    setCarregando(false);
-
     if (error || !data) {
+      setCarregando(false);
       setErro(error?.message ?? "Não deu pra criar a obra.");
       return;
     }
 
+    // A foto não bloqueia a criação: se o upload falhar, a obra já existe e a
+    // capa pode ser posta depois nas configurações. Perder a obra por causa
+    // da foto seria trocar o essencial pelo acessório.
+    if (capa) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const caminho = caminhoDaCapa(user.id, data.id, capa.name);
+        const { error: erroUpload } = await supabase.storage
+          .from("anexos")
+          .upload(caminho, capa);
+
+        if (!erroUpload) {
+          await supabase.from("obras").update({ photo_url: caminho }).eq("id", data.id);
+        }
+      }
+    }
+
+    setCarregando(false);
     router.push(`/obras/${data.id}/conversa`);
   }
 
@@ -55,9 +90,55 @@ export default function NovaObraPage() {
       </header>
 
       <form onSubmit={criar} className="space-y-4">
-        <div className="flex justify-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-line bg-surface-alt text-2xl text-ink-soft">
-            📷
+        <div className="flex flex-col items-center gap-2">
+          <input
+            ref={capaInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              escolherCapa(e.target.files?.[0] ?? null);
+              e.target.value = "";
+            }}
+          />
+
+          <button
+            type="button"
+            onClick={() => capaInputRef.current?.click()}
+            className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-line bg-surface-alt active:opacity-80"
+            aria-label={capa ? "Trocar a foto da obra" : "Escolher a foto da obra"}
+          >
+            {previa ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={previa} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <Image
+                src="/assets/logo/mascote-192.png"
+                alt=""
+                width={192}
+                height={192}
+                className="h-12 w-12"
+              />
+            )}
+          </button>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => capaInputRef.current?.click()}
+              className="font-display text-caption font-semibold text-primary"
+            >
+              {capa ? "Trocar foto" : "Escolher foto"}
+            </button>
+            {capa && (
+              <button
+                type="button"
+                onClick={() => escolherCapa(null)}
+                className="text-caption text-ink-soft"
+              >
+                remover
+              </button>
+            )}
           </div>
         </div>
 
