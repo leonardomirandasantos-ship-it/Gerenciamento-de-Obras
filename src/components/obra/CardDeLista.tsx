@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { criarChecklistDeLista } from "@/lib/aplicarSugestao";
 import { extrairItensDeLista, progressoChecklist } from "@/lib/checklist";
 import { formatarData } from "@/lib/datas";
+import { prazoDaLista } from "@/lib/pendencias";
 import { createClient } from "@/lib/supabase/client";
 import { SwipeParaExcluir } from "./SwipeParaExcluir";
 import { VerNoChat } from "./VerNoChat";
@@ -113,7 +114,14 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
   }
 
   const tudoFeito = total > 0 && feitos === total;
-  const prazoDaLista = (evento.payload as { date?: string }).date;
+  const prazo = prazoDaLista(evento);
+
+  // "Vencendo" cobre hoje e o que já passou — os dois pedem a mesma atenção.
+  const hoje = new Date();
+  const hojeIso = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(
+    hoje.getDate(),
+  ).padStart(2, "0")}`;
+  const vencendo = Boolean(prazo && prazo <= hojeIso);
 
   return (
     <SwipeParaExcluir onExcluir={tirarDaLista} rotulo="Tirar">
@@ -127,6 +135,18 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
               {feitos}/{total}
             </span>
           </div>
+
+          {/* Prazo no topo, junto do título: é o que faz o card ser
+              priorizado na lista (D117). Vence hoje ou já venceu, vira alerta. */}
+          {prazo && (
+            <span
+              className="chip"
+              style={{ "--chip": vencendo ? "var(--alert)" : "var(--info)" } as React.CSSProperties}
+            >
+              📅 {vencendo ? "para " : ""}
+              {formatarData(prazo)}
+            </span>
+          )}
           <div className="h-1.5 overflow-hidden rounded-full bg-surface-alt">
             <div
               className="h-full rounded-full bg-done transition-all"
@@ -175,12 +195,6 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
             </li>
           ))}
         </ul>
-
-        {prazoDaLista && (
-          <span className="chip" style={{ "--chip": "var(--info)" } as React.CSSProperties}>
-            📅 {formatarData(prazoDaLista)}
-          </span>
-        )}
 
         <div className="flex items-center justify-end gap-3">
           <button

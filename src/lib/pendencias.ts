@@ -20,6 +20,11 @@ export function itensDaLista(evento: Evento): ChecklistItem[] {
   }));
 }
 
+/** Prazo da lista, quando ela tem um. */
+export function prazoDaLista(evento: Evento): string | undefined {
+  return (evento.payload as { date?: string }).date;
+}
+
 /**
  * Listas abertas da obra, checklist e lista crua na mesma cesta (D76).
  * Uma lista só sai daqui quando é tirada explicitamente (`dismissed`).
@@ -37,9 +42,17 @@ export function listasAbertas(eventos: Evento[]): Evento[] {
     return !payload.linkedChecklistId || !idsDeChecklists.has(payload.linkedChecklistId);
   });
 
-  return [...checklists, ...listasSoltas].sort((a, b) =>
-    dataDaLista(b).localeCompare(dataDaLista(a)),
-  );
+  // Lista com prazo sobe, na ordem do prazo (D117): a priorização acontece
+  // AQUI, no mesmo card, em vez de repetir o card numa seção "com prazo".
+  return [...checklists, ...listasSoltas].sort((a, b) => {
+    const prazoA = prazoDaLista(a);
+    const prazoB = prazoDaLista(b);
+
+    if (prazoA && prazoB) return prazoA.localeCompare(prazoB);
+    if (prazoA) return -1;
+    if (prazoB) return 1;
+    return dataDaLista(b).localeCompare(dataDaLista(a));
+  });
 }
 
 /**

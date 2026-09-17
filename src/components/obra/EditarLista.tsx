@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { extrairPrazoDeclarado, formatarData } from "@/lib/datas";
@@ -33,6 +33,7 @@ export function EditarLista({
   const [linhas, setLinhas] = useState<ChecklistItem[]>(itens);
   const [prazo, setPrazo] = useState(payload.date ?? "");
   const [salvando, setSalvando] = useState(false);
+  const botaoAdicionarRef = useRef<HTMLButtonElement>(null);
 
   function editarTexto(indice: number, texto: string) {
     setLinhas((atuais) => atuais.map((item, i) => (i === indice ? { ...item, text: texto } : item)));
@@ -44,6 +45,11 @@ export function EditarLista({
 
   function acrescentar() {
     setLinhas((atuais) => [...atuais, { text: "", status: "falta" }]);
+    // O "+ item" sai da vista quando a lista cresce; trago ele de volta para
+    // não obrigar a rolar entre cada item que ela acrescenta.
+    requestAnimationFrame(() => {
+      botaoAdicionarRef.current?.scrollIntoView({ block: "nearest" });
+    });
   }
 
   async function salvar() {
@@ -106,7 +112,9 @@ export function EditarLista({
 
   return (
     <BottomSheet titulo="Editar lista" onFechar={onFechar}>
-      <>
+      {/* Altura mínima para o sheet não abrir parecendo um recorte, e o
+          "Salvar" grudado embaixo para não fugir quando a lista cresce. */}
+      <div className="flex min-h-[38dvh] flex-col">
         <ul className="mb-3 space-y-2">
           {linhas.map((item, indice) => (
             <li key={indice} className="flex items-center gap-2">
@@ -129,14 +137,15 @@ export function EditarLista({
         </ul>
 
         <button
+          ref={botaoAdicionarRef}
           type="button"
           onClick={acrescentar}
-          className="mb-4 w-full rounded-card border border-dashed border-line px-3 py-2.5 font-display text-caption font-semibold text-ink-soft"
+          className="mb-4 w-full shrink-0 rounded-card border border-dashed border-line px-3 py-2.5 font-display text-caption font-semibold text-ink-soft"
         >
           + item
         </button>
 
-        <div className="mb-6 space-y-1">
+        <div className="mb-4 space-y-1">
           <label className="text-caption font-semibold text-ink">Prazo da lista (opcional)</label>
           <input
             type="date"
@@ -155,15 +164,17 @@ export function EditarLista({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={salvar}
-          disabled={salvando || linhas.every((item) => item.text.trim() === "")}
-          className="w-full rounded-card bg-primary px-3 py-3 font-display text-body font-semibold text-white disabled:opacity-40"
-        >
-          {salvando ? "Salvando..." : "Salvar"}
-        </button>
-      </>
+        <div className="sticky bottom-0 mt-auto bg-surface pt-3">
+          <button
+            type="button"
+            onClick={salvar}
+            disabled={salvando || linhas.every((item) => item.text.trim() === "")}
+            className="w-full rounded-card bg-primary px-3 py-3 font-display text-body font-semibold text-white disabled:opacity-40"
+          >
+            {salvando ? "Salvando..." : "Salvar"}
+          </button>
+        </div>
+      </div>
     </BottomSheet>
   );
 }

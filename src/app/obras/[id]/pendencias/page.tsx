@@ -25,8 +25,12 @@ export default async function PendenciasPage({
   const listas = listasAbertas(eventos);
   const checklists = eventos.filter((evento) => evento.kind === "E2_checklist");
 
+  // Lista com prazo NÃO entra aqui: ela já sobe no topo da seção "Listas",
+  // com a data no próprio card (D117). Repetir o card virava um segundo
+  // registro "Registro", sem dizer do que se tratava.
   const comPrazo = eventos
     .filter((evento) => {
+      if (evento.kind === "E1_lista" || evento.kind === "E2_checklist") return false;
       const payload = evento.payload as { date?: string; done?: boolean };
       return Boolean(payload.date) && !payload.done;
     })

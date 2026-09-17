@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { formatarData } from "@/lib/datas";
+import { descricaoDoEvento } from "@/lib/descricao";
 import type { ChecklistItem, ChecklistPayload, Evento } from "@/lib/types";
 
 export type ItemDeChecklist = { item: ChecklistItem; checklist: Evento };
@@ -90,7 +91,7 @@ export function PrazosLista({
             className="flex items-center gap-2 rounded-card bg-surface p-3 shadow-card"
           >
             <div className="min-w-0 flex-1">
-              <p className="text-body text-ink">{evento.raw_text ?? "Registro"}</p>
+              <p className="text-body text-ink">{descricaoDoEvento(evento)}</p>
               <span className="chip mt-1" style={{ "--chip": "var(--info)" } as React.CSSProperties}>
                 📅 {formatarData(prazo)}
               </span>

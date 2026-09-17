@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const LIMITE_FECHAR = 100;
 
@@ -8,6 +9,11 @@ const LIMITE_FECHAR = 100;
  * Bottom sheet global (D46). Fecha tocando fora ou **arrastando para baixo**
  * pela alça — comportamento esperado em app de celular (D58). O arraste fica
  * só na alça/título para não brigar com o scroll do conteúdo.
+ *
+ * Vai por portal no <body> de propósito (D116): dentro de um ancestral com
+ * `transform` — o card com arraste para excluir, por exemplo — o `fixed`
+ * passa a se posicionar em relação AO CARD, e o sheet abria do tamanho do
+ * card, crescendo para cima. Portal tira o sheet de qualquer contexto.
  */
 export function BottomSheet({
   titulo,
@@ -32,10 +38,10 @@ export function BottomSheet({
     inicioY.current = null;
   }
 
-  return (
+  const sheet = (
     <div className="fixed inset-0 z-50 flex items-end bg-black/30" onClick={onFechar}>
       <div
-        className="safe-bottom max-h-[85dvh] w-full overflow-y-auto rounded-t-sheet bg-surface"
+        className="safe-bottom flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-t-sheet bg-surface shadow-sheet"
         onClick={(e) => e.stopPropagation()}
         style={{
           transform: `translateY(${deslocamento}px)`,
@@ -43,7 +49,7 @@ export function BottomSheet({
         }}
       >
         <div
-          className="touch-none select-none px-4 pb-1 pt-3"
+          className="shrink-0 touch-none select-none px-4 pb-1 pt-3"
           onPointerDown={(e) => {
             inicioY.current = e.clientY;
             setArrastando(true);
@@ -70,8 +76,15 @@ export function BottomSheet({
           </div>
         </div>
 
-        <div className="px-4 pb-4">{children}</div>
+        {/* O conteúdo rola por dentro: com muitos itens a lista precisa de
+            scroll próprio, senão o sheet estoura a tela. */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">{children}</div>
       </div>
     </div>
   );
+
+  // Sem estado de "montado": o sheet só é renderizado depois de um toque, e
+  // por isso nunca aparece no HTML do servidor — a guarda basta.
+  if (typeof document === "undefined") return null;
+  return createPortal(sheet, document.body);
 }
