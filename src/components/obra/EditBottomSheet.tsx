@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ambientesDoEvento } from "@/lib/ambientes";
 import { BottomSheet } from "./BottomSheet";
 import { SeletorDeAmbientes } from "./SeletorDeAmbientes";
+import { CampoFavorecido } from "./CampoFavorecido";
 import {
   RÓTULO_TIPO,
   type Evento,
@@ -52,6 +53,8 @@ export function EditBottomSheet({
   const [ambientes, setAmbientes] = useState<string[]>(
     evento.kind === "E3_decisao" ? ambientesDoEvento(evento) : [],
   );
+  const [texto, setTexto] = useState(evento.raw_text ?? "");
+  const [legenda, setLegenda] = useState(evento.caption ?? "");
   const [carregando, setCarregando] = useState(false);
 
   async function salvar() {
@@ -99,6 +102,11 @@ export function EditBottomSheet({
         confidence: 1,
         phase_id: phaseId || null,
         favorecido_id: favorecidoId,
+        // O texto é editável (D104): erro de digitação não deveria obrigar a
+        // apagar e remandar. O tipo escolhido continua valendo — não
+        // reclassifico por trás, senão a correção mudaria a aba sem avisar.
+        raw_text: evento.raw_text !== null ? texto : null,
+        caption: legenda || null,
         payload,
         edited: true,
       })
@@ -123,10 +131,28 @@ export function EditBottomSheet({
   return (
     <BottomSheet titulo="Editar registro" onFechar={onClose}>
       <>
-        {evento.raw_text && (
-          <p className="mb-4 rounded-card bg-surface-alt p-3 text-sm text-ink-soft">
-            {evento.raw_text}
-          </p>
+        {evento.raw_text !== null && (
+          <div className="mb-4 space-y-1">
+            <label className="text-caption font-semibold text-ink">Texto</label>
+            <textarea
+              rows={Math.min(8, Math.max(2, texto.split("\n").length))}
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              className="w-full resize-none rounded-card border border-line bg-surface px-3 py-2.5 text-base leading-snug text-ink outline-none focus:border-primary"
+            />
+          </div>
+        )}
+
+        {(evento.anexos?.length ?? 0) > 0 && (
+          <div className="mb-4 space-y-1">
+            <label className="text-caption font-semibold text-ink">Legenda</label>
+            <input
+              value={legenda}
+              onChange={(e) => setLegenda(e.target.value)}
+              placeholder="O que é esse arquivo?"
+              className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
+            />
+          </div>
         )}
 
         <p className="mb-2 text-sm font-medium text-ink">Tipo</p>
@@ -171,12 +197,16 @@ export function EditBottomSheet({
               <label className="text-xs font-medium text-ink-soft">
                 Favorecido
               </label>
-              <input
-                value={favorecido}
-                onChange={(e) => setFavorecido(e.target.value)}
-                placeholder="Quem recebeu"
-                className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
-              />
+              {obraId ? (
+                <CampoFavorecido obraId={obraId} valor={favorecido} onChange={setFavorecido} />
+              ) : (
+                <input
+                  value={favorecido}
+                  onChange={(e) => setFavorecido(e.target.value)}
+                  placeholder="Quem recebeu"
+                  className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
+                />
+              )}
             </div>
           </div>
         )}

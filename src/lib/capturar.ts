@@ -73,11 +73,14 @@ export async function capturarArquivos({
   arquivos,
   faseAtualId,
   kind,
+  legenda,
 }: {
   obraId: string;
   arquivos: File[];
   faseAtualId: string | null;
   kind?: EventoKind;
+  /** O que ela escreveu junto do anexo — vira legenda E entra na classificação. */
+  legenda?: string;
 }): Promise<{ falhas: string[] }> {
   const supabase = createClient();
   const {
@@ -88,11 +91,15 @@ export async function capturarArquivos({
 
   const falhas: string[] = [];
 
+  const descricao = legenda?.trim() ?? "";
+
   for (const file of arquivos) {
     const tipo = tipoDoArquivo(file);
-    // O nome do arquivo entra na classificação: "Orçamento 335396.pdf" → E8.
+    // A legenda manda na classificação quando existe — "comprovante do Valdir"
+    // diz muito mais que "IMG-20260610-WA0014.jpg". Sem legenda, vale o nome
+    // do arquivo ("Orçamento 335396.pdf" → E8).
     const automatico = classificar({
-      texto: file.name,
+      texto: descricao || file.name,
       temFoto: tipo === "foto",
       temVideo: tipo === "video",
       temPdf: tipo === "pdf",
@@ -114,7 +121,13 @@ export async function capturarArquivos({
         confidence: kind ? 1 : automatico.confidence,
         phase_id: faseAtualId,
         edited: Boolean(kind),
-        payload: { fileName: file.name },
+        caption: descricao || null,
+        payload: semVazios({
+          fileName: file.name,
+          ...(automatico.kind === "E7_pagamento" && descricao
+            ? extrairDadosPagamento(descricao)
+            : {}),
+        }),
       })
       .select("id")
       .single();

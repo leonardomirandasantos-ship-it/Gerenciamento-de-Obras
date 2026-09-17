@@ -114,14 +114,20 @@ export type Obra = {
   updated_at: string;
 };
 
+/**
+ * Cada rótulo é o nome da LENTE que o registro alimenta (D108). "material" vs
+ * "pagamento" confundia com razão — tijolo comprado é material e é pagamento.
+ * O eixo real não é o assunto, é o tempo: o que ainda vou fazer é pendência,
+ * o que já saiu do bolso é gasto.
+ */
 export const RÓTULO_TIPO: Record<EventoKind, string> = {
-  E1_lista: "material",
+  E1_lista: "pendência",
   E2_checklist: "checklist",
   E3_decisao: "decisão",
   E4_documentacao: "foto",
   E5_documento: "documento",
   E6_comunicacao: "comunicação",
-  E7_pagamento: "pagamento",
+  E7_pagamento: "gasto",
   E8_orcamento: "orçamento",
   unclassified: "não classificado",
 };

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { BottomSheet } from "./BottomSheet";
 import { SeletorDeAmbientes } from "./SeletorDeAmbientes";
+import { CampoFavorecido } from "./CampoFavorecido";
 import { capturarArquivos, capturarTexto } from "@/lib/capturar";
 import { createClient } from "@/lib/supabase/client";
 import { AMBIENTES, ambientesDaObra } from "@/lib/ambientes";
@@ -215,12 +216,7 @@ export function AtalhoDeCaptura({
                 </div>
                 <div className="flex-1 space-y-1">
                   <label className="text-micro font-semibold text-ink-soft">Favorecido</label>
-                  <input
-                    value={favorecido}
-                    onChange={(e) => setFavorecido(e.target.value)}
-                    placeholder="Quem recebeu"
-                    className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
-                  />
+                  <CampoFavorecido obraId={obraId} valor={favorecido} onChange={setFavorecido} />
                 </div>
               </div>
             )}

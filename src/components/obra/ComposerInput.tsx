@@ -19,7 +19,19 @@ export function ComposerInput({
   const [enviando, setEnviando] = useState(false);
   const [avisoAudio, setAvisoAudio] = useState(false);
   const [falhas, setFalhas] = useState<string[]>([]);
+  // Anexo fica "em espera" até ela mandar, para poder escrever o que é — é o
+  // modelo do WhatsApp e não cria gate: mandar sem escrever nada continua a
+  // um toque (D106).
+  const [emEspera, setEmEspera] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function enviar() {
+    if (emEspera.length > 0) {
+      await enviarArquivos(emEspera, texto.trim());
+      return;
+    }
+    await enviarTexto();
+  }
 
   async function enviarTexto() {
     const conteudo = texto.trim();
@@ -40,22 +52,26 @@ export function ComposerInput({
     router.refresh();
   }
 
-  async function enviarArquivos(files: FileList) {
-    const lista = Array.from(files);
+  async function enviarArquivos(lista: File[], legenda: string) {
+    if (enviando) return;
+
     for (const file of lista) {
       onPendente({
         id: crypto.randomUUID(),
-        texto: `📎 ${file.name}`,
-        kind: classificarTexto(file.name).kind,
+        texto: legenda || `📎 ${file.name}`,
+        kind: classificarTexto(legenda || file.name).kind,
       });
     }
 
+    setTexto("");
+    setEmEspera([]);
     setEnviando(true);
     setFalhas([]);
     const { falhas: naoSubiram } = await capturarArquivos({
       obraId,
       arquivos: lista,
       faseAtualId,
+      legenda,
     });
     setFalhas(naoSubiram);
     setEnviando(false);
@@ -76,6 +92,27 @@ export function ComposerInput({
         </p>
       )}
 
+      {emEspera.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-2">
+          {emEspera.map((file, indice) => (
+            <span
+              key={`${file.name}-${indice}`}
+              className="flex max-w-full items-center gap-2 rounded-full bg-surface-alt py-1 pl-3 pr-1 text-micro text-ink"
+            >
+              <span className="min-w-0 truncate">📎 {file.name}</span>
+              <button
+                type="button"
+                onClick={() => setEmEspera((atuais) => atuais.filter((_, i) => i !== indice))}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-ink-soft"
+                aria-label={`Tirar ${file.name}`}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-end gap-2 border-t border-line pt-3">
         <input
           ref={fileInputRef}
@@ -84,7 +121,9 @@ export function ComposerInput({
           multiple
           className="hidden"
           onChange={(e) => {
-            if (e.target.files && e.target.files.length > 0) enviarArquivos(e.target.files);
+            if (e.target.files && e.target.files.length > 0) {
+              setEmEspera((atuais) => [...atuais, ...Array.from(e.target.files!)]);
+            }
             e.target.value = "";
           }}
         />
@@ -99,7 +138,7 @@ export function ComposerInput({
 
         <textarea
           rows={1}
-          placeholder="Manda aqui..."
+          placeholder={emEspera.length > 0 ? "Escreve o que é (opcional)" : "Manda aqui..."}
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           onKeyDown={(e) => {
@@ -107,7 +146,7 @@ export function ComposerInput({
             // todo). Enviar é só pelo botão — ou Cmd/Ctrl+Enter no teclado.
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
-              enviarTexto();
+              enviar();
             }
           }}
           className="max-h-32 min-h-11 flex-1 resize-none rounded-bubble border border-line bg-surface-alt px-4 py-3 text-base leading-tight text-ink outline-none focus:border-primary"
@@ -128,8 +167,8 @@ export function ComposerInput({
 
         <button
           type="button"
-          onClick={enviarTexto}
-          disabled={!texto.trim()}
+          onClick={enviar}
+          disabled={!texto.trim() && emEspera.length === 0}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-lg text-white disabled:opacity-40"
           aria-label="Enviar"
         >

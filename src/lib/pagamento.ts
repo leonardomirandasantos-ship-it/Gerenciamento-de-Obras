@@ -12,7 +12,7 @@ export type PagamentoPayload = {
 const NUMERO = String.raw`\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+(?:[.,]\d{2})?`;
 
 const VERBO_DE_PAGAMENTO =
-  String.raw`paguei|pagamos|pago|adiantei|transferi|depositei|comprei|compramos|gastei|gastamos|quitei|acertei|valor|pix(?:\s+de)?`;
+  String.raw`paguei|pagamos|pago|adiantei|transferi|depositei|comprei|compramos|gastei|gastamos|quitei|acertei|valor|comprovante(?:\s+de)?|pix(?:\s+de)?`;
 
 /**
  * Unidade logo depois do número quer dizer QUANTIDADE, não dinheiro:
@@ -51,7 +51,10 @@ const REGEX_FAVORECIDO = new RegExp(
  * Só é consultada quando a preposição forte não achou nada, porque "na/no"
  * também aparece em lugar e tempo ("na obra", "na sexta") — daí o NAO_E_NOME.
  */
-const REGEX_LOCAL_DA_COMPRA = new RegExp(String.raw`\b(?:n[ao]s?|em)\s+(${NOME})`, "iu");
+const REGEX_LOCAL_DA_COMPRA = new RegExp(
+  String.raw`\b(?:n[ao]s?|em|d[ao]s?)\s+(${NOME})`,
+  "iu",
+);
 
 /** Palavras que indicam que o que vem depois da preposição não é favorecido. */
 const NAO_E_NOME = new Set([

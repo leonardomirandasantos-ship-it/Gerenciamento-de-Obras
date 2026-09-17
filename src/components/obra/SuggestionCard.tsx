@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { aplicarSugestao, ignorarSugestao } from "@/lib/aplicarSugestao";
+import { CampoFavorecido } from "./CampoFavorecido";
 import type { Sugestao } from "@/lib/suggestions";
 import type { Evento } from "@/lib/types";
 
@@ -54,12 +55,9 @@ export function SuggestionCard({
             placeholder="R$"
             className="w-24 rounded-card border border-line bg-surface px-3 py-2 text-base text-ink outline-none focus:border-primary"
           />
-          <input
-            value={favorecido}
-            onChange={(e) => setFavorecido(e.target.value)}
-            placeholder="Quem recebeu"
-            className="min-w-0 flex-1 rounded-card border border-line bg-surface px-3 py-2 text-base text-ink outline-none focus:border-primary"
-          />
+          <span className="min-w-0 flex-1">
+            <CampoFavorecido obraId={obraId} valor={favorecido} onChange={setFavorecido} />
+          </span>
         </div>
       )}
 
@@ -71,7 +69,7 @@ export function SuggestionCard({
               type="button"
               onClick={() => aceitar(opcao.valor)}
               disabled={carregando}
-              className="rounded-full border border-primary bg-surface px-3 py-2 text-xs font-semibold text-primary disabled:opacity-50"
+              className="rounded-full border border-primary bg-surface px-3 py-2 font-display text-caption font-semibold text-primary disabled:opacity-50"
             >
               {opcao.label}
             </button>

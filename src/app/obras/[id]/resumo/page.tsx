@@ -45,7 +45,9 @@ export default async function ResumoPage({ params }: { params: Promise<{ id: str
 
   const orcamentos = eventos.filter((evento) => evento.kind === "E8_orcamento").length;
 
+  // Mesmo corte da aba Documentação (D105): comprovante não é foto de obra.
   const fotosRecentes = eventos
+    .filter((evento) => evento.kind !== "E7_pagamento" && evento.kind !== "E8_orcamento")
     .flatMap((evento) => (evento.anexos ?? []).filter((anexo) => anexo.tipo === "foto"))
     .slice(-6)
     .reverse();

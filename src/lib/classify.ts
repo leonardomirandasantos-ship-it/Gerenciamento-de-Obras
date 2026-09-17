@@ -52,12 +52,22 @@ const REGEX_TAREFA =
 export function classificar(entrada: EntradaClassificacao): ResultadoClassificacao {
   const { texto, temFoto, temVideo, temPdf, temAudio } = entrada;
 
+  const dizPagamento = REGEX_PAGAMENTO.test(texto);
+  const dizOrcamento = REGEX_ORCAMENTO.test(texto);
+
   if (temPdf) {
-    if (REGEX_ORCAMENTO.test(texto)) return { kind: "E8_orcamento", confidence: 0.7 };
+    if (dizOrcamento) return { kind: "E8_orcamento", confidence: 0.7 };
+    if (dizPagamento) return { kind: "E7_pagamento", confidence: 0.8 };
     return { kind: "E5_documento", confidence: 0.8 };
   }
 
-  if (temFoto || temVideo) return { kind: "E4_documentacao", confidence: 0.9 };
+  // Foto com legenda: a legenda manda. "comprovante do Valdir" é gasto, não
+  // foto de obra — senão o comprovante ia parar no álbum da obra (D105).
+  if (temFoto || temVideo) {
+    if (dizPagamento) return { kind: "E7_pagamento", confidence: 0.8 };
+    if (dizOrcamento) return { kind: "E8_orcamento", confidence: 0.7 };
+    return { kind: "E4_documentacao", confidence: 0.9 };
+  }
   if (temAudio) return { kind: "unclassified", confidence: 0 };
   if (!texto.trim()) return { kind: "unclassified", confidence: 0 };
 
@@ -67,7 +77,7 @@ export function classificar(entrada: EntradaClassificacao): ResultadoClassificac
     .filter(Boolean);
   const primeiraLinha = linhas[0] ?? "";
 
-  if (REGEX_PAGAMENTO.test(texto)) {
+  if (dizPagamento) {
     return { kind: "E7_pagamento", confidence: 0.75 };
   }
 
@@ -88,7 +98,7 @@ export function classificar(entrada: EntradaClassificacao): ResultadoClassificac
     return { kind: "E6_comunicacao", confidence: 0.6 };
   }
 
-  if (REGEX_ORCAMENTO.test(texto) || REGEX_DINHEIRO.test(texto)) {
+  if (dizOrcamento || REGEX_DINHEIRO.test(texto)) {
     return { kind: "E8_orcamento", confidence: 0.6 };
   }
 
