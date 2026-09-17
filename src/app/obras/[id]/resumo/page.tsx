@@ -6,6 +6,7 @@ import { itensAComprar } from "@/lib/pendencias";
 import { RoscaPorFase, type FatiaFase } from "@/components/obra/RoscaPorFase";
 import { PagamentosEditaveis } from "@/components/obra/PagamentosEditaveis";
 import { RegistrosEditaveis } from "@/components/obra/RegistrosEditaveis";
+import { ListaDeFavorecidos } from "@/components/obra/ListaDeFavorecidos";
 import type { Fase } from "@/lib/types";
 
 /**
@@ -49,7 +50,6 @@ export default async function ResumoPage({ params }: { params: Promise<{ id: str
     .slice(-6)
     .reverse();
 
-  const maiorGasto = porPessoa[0]?.total ?? 0;
   const ultimos = [...eventos].reverse().slice(0, 5);
 
   return (
@@ -80,49 +80,15 @@ export default async function ResumoPage({ params }: { params: Promise<{ id: str
             ninguém.
           </p>
         ) : (
-          <ul className="divide-y divide-line">
-            {porPessoa.map((pessoa) => (
-              <li key={pessoa.nome}>
-                {/* Linha inteira clicável com inicial e chevron: antes parecia
-                    só um gráfico, e ninguém descobria que abria o histórico. */}
-                <Link
-                  href={`/obras/${id}/prestador/${encodeURIComponent(pessoa.nome)}`}
-                  className="flex items-center gap-3 py-3 active:bg-surface-alt"
-                >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft font-display font-bold text-primary">
-                    {pessoa.nome.charAt(0).toUpperCase()}
-                  </span>
-
-                  <span className="min-w-0 flex-1 space-y-1">
-                    <span className="flex items-baseline justify-between gap-2">
-                      <span className="min-w-0 truncate font-display text-body font-bold text-ink">
-                        {pessoa.nome}
-                      </span>
-                      <span className="shrink-0 font-display text-body font-bold text-ink">
-                        {formatarReais(pessoa.total)}
-                      </span>
-                    </span>
-                    <span className="block h-1.5 overflow-hidden rounded-full bg-surface-alt">
-                      <span
-                        className="block h-full rounded-full bg-primary"
-                        style={{
-                          width: maiorGasto > 0 ? `${(pessoa.total / maiorGasto) * 100}%` : "0%",
-                        }}
-                      />
-                    </span>
-                    <span className="block text-micro text-ink-soft">
-                      {pessoa.pagamentos} {pessoa.pagamentos === 1 ? "pagamento" : "pagamentos"}
-                      {pessoa.tipo ? ` · ${pessoa.tipo}` : ""}
-                    </span>
-                  </span>
-
-                  <span aria-hidden className="shrink-0 text-lg text-ink-soft">
-                    ›
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <ListaDeFavorecidos
+            obraId={id}
+            pessoas={porPessoa.map((pessoa) => ({
+              nome: pessoa.nome,
+              tipo: pessoa.tipo,
+              total: pessoa.total,
+              pagamentos: pessoa.pagamentos,
+            }))}
+          />
         )}
       </section>
 
@@ -193,7 +159,7 @@ export default async function ResumoPage({ params }: { params: Promise<{ id: str
               abrir conversa
             </Link>
           </div>
-          <RegistrosEditaveis eventos={ultimos} fases={(fases ?? []) as Fase[]} />
+          <RegistrosEditaveis eventos={ultimos} fases={(fases ?? []) as Fase[]} obraId={id} />
         </section>
       )}
 

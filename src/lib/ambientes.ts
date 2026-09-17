@@ -3,7 +3,7 @@
  * mensagens reais: ela escreve "Suítes 1 e 2", "Master", "Lavabo", "gourmet",
  * "box" — e não "quarto", "banheiro", "cozinha".
  */
-export const AMBIENTES = [
+export const AMBIENTES: string[] = [
   "Quartos",
   "Banheiros",
   "Cozinha",
@@ -11,9 +11,14 @@ export const AMBIENTES = [
   "Escritório",
   "Lavanderia",
   "Área externa",
-] as const;
+];
 
-export type Ambiente = (typeof AMBIENTES)[number];
+/**
+ * Ambiente é texto livre, não taxonomia fechada: os 7 acima são só os que o
+ * app reconhece sozinho a partir do texto. Casa real tem canil, adega, ateliê
+ * — o usuário cria o que faltar ao fixar a decisão (D98).
+ */
+export type Ambiente = string;
 
 const PADROES: { ambiente: Ambiente; regex: RegExp }[] = [
   { ambiente: "Quartos", regex: /\bsu[íi]tes?\b|\bquartos?\b|\bmaster\b|\bcloset\b|\bdormit[óo]rio/i },
@@ -41,4 +46,32 @@ export function detectarAmbientes(texto: string): Ambiente[] {
 
 export function detectarAmbiente(texto: string): Ambiente | undefined {
   return detectarAmbientes(texto)[0];
+}
+
+/** Ambientes de um evento: os fixados, ou os detectados se ainda não fixaram. */
+export function ambientesDoEvento(evento: {
+  payload: Record<string, unknown>;
+  raw_text: string | null;
+}): Ambiente[] {
+  const payload = evento.payload as { environments?: string[]; environment?: string };
+  if (payload.environments?.length) return payload.environments;
+  if (payload.environment) return [payload.environment];
+  return detectarAmbientes(evento.raw_text ?? "");
+}
+
+/**
+ * Lista de filtro da aba Decisões: os conhecidos mais os que esta obra
+ * realmente usa. Cresce sozinha — não existe tela de "cadastrar ambiente",
+ * e nenhum filtro aparece sem ter decisão por trás.
+ */
+export function ambientesDaObra(
+  eventos: { payload: Record<string, unknown>; raw_text: string | null }[],
+): Ambiente[] {
+  const usados = new Set<string>();
+  for (const evento of eventos) {
+    for (const ambiente of ambientesDoEvento(evento)) usados.add(ambiente);
+  }
+
+  const extras = [...usados].filter((ambiente) => !AMBIENTES.includes(ambiente)).sort();
+  return [...AMBIENTES, ...extras];
 }

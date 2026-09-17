@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AMBIENTES, detectarAmbientes } from "@/lib/ambientes";
+import { ambientesDaObra, ambientesDoEvento } from "@/lib/ambientes";
 import { VerNoChat } from "./VerNoChat";
 import type { DecisaoPayload, Evento } from "@/lib/types";
 
@@ -17,23 +17,22 @@ export function ListaDecisoes({
 
   // O ambiente funciona sozinho: se a decisão ainda não foi "fixada", detecto
   // na hora a partir do texto — fixar só enriquece o que já estava lá.
-  const decisoes = eventos.map((evento) => {
-    const payload = evento.payload as DecisaoPayload;
-    const ambientes =
-      payload.environments ??
-      (payload.environment
-        ? [payload.environment]
-        : detectarAmbientes(evento.raw_text ?? ""));
-    return { evento, payload, ambientes };
-  });
+  const decisoes = eventos.map((evento) => ({
+    evento,
+    payload: evento.payload as DecisaoPayload,
+    ambientes: ambientesDoEvento(evento),
+  }));
+
+  // A barra de filtro cresce com a obra: os 7 conhecidos mais os que ela
+  // criou. Nenhum filtro aparece sem ter decisão por trás (D98).
+  const opcoesDeAmbiente = ambientesDaObra(eventos);
 
   const filtradas = decisoes.filter(({ evento, payload, ambientes }) => {
     const texto =
       `${payload.title ?? ""} ${payload.value ?? ""} ${evento.raw_text ?? ""} ${ambientes.join(" ")}`.toLowerCase();
     const casaBusca =
       busca.trim() === "" || texto.includes(busca.toLowerCase());
-    const casaAmbiente =
-      ambiente === "todos" || ambientes.includes(ambiente as never);
+    const casaAmbiente = ambiente === "todos" || ambientes.includes(ambiente);
     return casaBusca && casaAmbiente;
   });
 
@@ -57,7 +56,7 @@ export function ListaDecisoes({
       />
 
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {["todos", ...AMBIENTES].map((opcao) => (
+        {["todos", ...opcoesDeAmbiente].map((opcao) => (
           <button
             key={opcao}
             type="button"

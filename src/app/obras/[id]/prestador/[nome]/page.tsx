@@ -9,6 +9,8 @@ import {
   type Favorecido,
   type PagamentoPayload,
 } from "@/lib/pagamento";
+import { EditarFavorecido } from "@/components/obra/EditarFavorecido";
+import { BotaoEditarRegistro } from "@/components/obra/BotaoEditarRegistro";
 import type { Fase } from "@/lib/types";
 
 export default async function PrestadorPage({
@@ -44,29 +46,41 @@ export default async function PrestadorPage({
         ← voltar ao resumo
       </Link>
 
-      <section className="space-y-2 rounded-card bg-surface shadow-card p-4">
+      <section className="space-y-2 rounded-card bg-surface p-4 shadow-card">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft font-display text-lg font-bold text-primary">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-soft font-display text-lg font-bold text-primary">
             {pessoa.nome.charAt(0).toUpperCase()}
           </div>
-          <div className="min-w-0">
-            <p className="truncate font-display text-base font-bold text-ink">{pessoa.nome}</p>
-            <p className="text-xs text-ink-soft">{pessoa.tipo ?? "sem categoria"}</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-section font-bold text-ink">{pessoa.nome}</p>
+            {pessoa.tipo ? (
+              <span className="chip" style={{ "--chip": "var(--primary)" } as React.CSSProperties}>
+                {pessoa.tipo}
+              </span>
+            ) : (
+              <p className="text-micro text-ink-soft">sem tipo definido</p>
+            )}
           </div>
+          <EditarFavorecido
+            obraId={id}
+            nomeAtual={pessoa.nome}
+            tipoAtual={pessoa.tipo}
+            eventos={pessoa.eventos}
+          />
         </div>
 
-        <div className="flex gap-4 pt-1 text-sm">
+        <div className="flex gap-4 pt-1">
           <div>
-            <p className="text-xs text-ink-soft">Total pago</p>
+            <p className="text-micro text-ink-soft">Total pago</p>
             <p className="font-display font-bold text-ink">{formatarReais(pessoa.total)}</p>
           </div>
           <div>
-            <p className="text-xs text-ink-soft">Pagamentos</p>
+            <p className="text-micro text-ink-soft">Pagamentos</p>
             <p className="font-display font-bold text-ink">{pessoa.pagamentos}</p>
           </div>
           {pessoa.desde && (
             <div>
-              <p className="text-xs text-ink-soft">Desde</p>
+              <p className="text-micro text-ink-soft">Desde</p>
               <p className="font-display font-bold text-ink">
                 {new Date(pessoa.desde).toLocaleDateString("pt-BR")}
               </p>
@@ -91,7 +105,7 @@ export default async function PrestadorPage({
               return (
                 <li
                   key={evento.id}
-                  className="flex items-start gap-3 rounded-card bg-surface shadow-card p-3"
+                  className="flex items-start gap-3 rounded-card bg-surface p-3 shadow-card"
                 >
                   {comprovante ? (
                     <a href={comprovante.url} target="_blank" rel="noreferrer" className="shrink-0">
@@ -109,11 +123,20 @@ export default async function PrestadorPage({
                   )}
 
                   <div className="min-w-0 flex-1 space-y-0.5">
-                    <p className="font-medium text-ink">{formatarReais(payload.amount ?? 0)}</p>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="font-display text-body font-bold text-ink">
+                        {formatarReais(payload.amount ?? 0)}
+                      </p>
+                      <BotaoEditarRegistro
+                        evento={evento}
+                        fases={(fases ?? []) as Fase[]}
+                        obraId={id}
+                      />
+                    </div>
                     {evento.raw_text && (
-                      <p className="truncate text-xs text-ink-soft">{evento.raw_text}</p>
+                      <p className="truncate text-micro text-ink-soft">{evento.raw_text}</p>
                     )}
-                    <div className="flex items-center gap-2 text-[11px] text-ink-soft">
+                    <div className="flex items-center gap-2 text-micro text-ink-soft">
                       <span>{new Date(evento.received_at).toLocaleDateString("pt-BR")}</span>
                       {fase && (
                         <span className="rounded-full bg-surface-alt px-1.5 py-0.5">{fase}</span>

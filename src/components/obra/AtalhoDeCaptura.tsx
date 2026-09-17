@@ -3,7 +3,10 @@
 import { useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { BottomSheet } from "./BottomSheet";
+import { SeletorDeAmbientes } from "./SeletorDeAmbientes";
 import { capturarArquivos, capturarTexto } from "@/lib/capturar";
+import { createClient } from "@/lib/supabase/client";
+import { AMBIENTES, ambientesDaObra } from "@/lib/ambientes";
 import { RÓTULO_TIPO, type EventoKind } from "@/lib/types";
 
 type Atalho = {
@@ -68,6 +71,8 @@ export function AtalhoDeCaptura({
   const [texto, setTexto] = useState("");
   const [valor, setValor] = useState("");
   const [favorecido, setFavorecido] = useState("");
+  const [ambientes, setAmbientes] = useState<string[]>([]);
+  const [ambientesConhecidos, setAmbientesConhecidos] = useState<string[]>(AMBIENTES);
   const [salvando, setSalvando] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,11 +82,47 @@ export function AtalhoDeCaptura({
   // Na conversa o composer já está ali embaixo; nas configurações não faz sentido.
   if (!atalho) return null;
 
+  /**
+   * Os ambientes já usados na obra só são buscados quando a folha abre — pôr
+   * essa consulta no layout custaria uma ida ao banco em toda troca de aba
+   * para algo que quase nunca é usado.
+   */
+  async function abrirFolha() {
+    setAberto(true);
+    if (atalho.kind !== "E3_decisao") return;
+
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("eventos")
+      .select("payload, raw_text")
+      .eq("obra_id", obraId)
+      .eq("kind", "E3_decisao")
+      .eq("deleted", false);
+
+    if (data) setAmbientesConhecidos(ambientesDaObra(data));
+  }
+
   function fechar() {
     setAberto(false);
     setTexto("");
     setValor("");
     setFavorecido("");
+    setAmbientes([]);
+  }
+
+  function extraDoTipo(): Record<string, unknown> | undefined {
+    if (atalho.kind === "E7_pagamento") {
+      return {
+        amount: valor ? parseFloat(valor.replace(".", "").replace(",", ".")) : undefined,
+        payeeName: favorecido.trim() || undefined,
+      };
+    }
+    // Decisão já nasce com o ambiente marcado: ela está criando ali, na aba
+    // de decisões, então é o momento natural de dizer "isso é do banheiro".
+    if (atalho.kind === "E3_decisao" && ambientes.length > 0) {
+      return { environments: ambientes, environment: ambientes[0] };
+    }
+    return undefined;
   }
 
   async function salvar() {
@@ -94,13 +135,7 @@ export function AtalhoDeCaptura({
       texto: conteudo,
       faseAtualId,
       kind: atalho.kind,
-      payloadExtra:
-        atalho.kind === "E7_pagamento"
-          ? {
-              amount: valor ? parseFloat(valor.replace(".", "").replace(",", ".")) : undefined,
-              payeeName: favorecido.trim() || undefined,
-            }
-          : undefined,
+      payloadExtra: extraDoTipo(),
     });
     setSalvando(false);
     fechar();
@@ -124,7 +159,7 @@ export function AtalhoDeCaptura({
     <>
       <button
         type="button"
-        onClick={() => (atalho.arquivo ? fileInputRef.current?.click() : setAberto(true))}
+        onClick={() => (atalho.arquivo ? fileInputRef.current?.click() : abrirFolha())}
         className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-fab bg-primary text-2xl text-white shadow-card"
         aria-label={atalho.titulo}
       >
@@ -175,6 +210,19 @@ export function AtalhoDeCaptura({
                     className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
                   />
                 </div>
+              </div>
+            )}
+
+            {atalho.kind === "E3_decisao" && (
+              <div className="mb-3 space-y-2">
+                <p className="font-display text-caption font-semibold text-ink">
+                  Onde é essa decisão?
+                </p>
+                <SeletorDeAmbientes
+                  selecionados={ambientes}
+                  onChange={setAmbientes}
+                  conhecidos={ambientesConhecidos}
+                />
               </div>
             )}
 

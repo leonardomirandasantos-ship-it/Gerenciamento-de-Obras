@@ -22,9 +22,11 @@ function descricao(evento: Evento): string {
 export function RegistrosEditaveis({
   eventos,
   fases,
+  obraId,
 }: {
   eventos: Evento[];
   fases: Fase[];
+  obraId: string;
 }) {
   const [editando, setEditando] = useState<Evento | null>(null);
 
@@ -51,7 +53,12 @@ export function RegistrosEditaveis({
       </ul>
 
       {editando && (
-        <EditBottomSheet evento={editando} fases={fases} onClose={() => setEditando(null)} />
+        <EditBottomSheet
+          evento={editando}
+          fases={fases}
+          obraId={obraId}
+          onClose={() => setEditando(null)}
+        />
       )}
     </>
   );

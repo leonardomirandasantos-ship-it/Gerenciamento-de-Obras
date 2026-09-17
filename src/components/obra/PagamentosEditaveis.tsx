@@ -58,7 +58,12 @@ export function PagamentosEditaveis({
       </ul>
 
       {editando && (
-        <EditBottomSheet evento={editando} fases={fases} onClose={() => setEditando(null)} />
+        <EditBottomSheet
+          evento={editando}
+          fases={fases}
+          obraId={obraId}
+          onClose={() => setEditando(null)}
+        />
       )}
     </>
   );

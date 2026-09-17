@@ -1,16 +1,70 @@
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
+import { assinarCapas, urlDaCapa } from "@/lib/fotoObra";
 import { LogoutButton } from "@/components/LogoutButton";
+
+type ObraDaLista = {
+  id: string;
+  name: string;
+  location: string | null;
+  photo_url: string | null;
+  status: string;
+  fases: { name: string; color: string }[] | { name: string; color: string } | null;
+};
+
+function CartaoDeObra({ obra, capa }: { obra: ObraDaLista; capa: string | null }) {
+  const fase = Array.isArray(obra.fases) ? obra.fases[0] : obra.fases;
+
+  return (
+    <Link
+      href={`/obras/${obra.id}/conversa`}
+      className="flex items-center gap-3 rounded-card bg-surface p-3 shadow-card active:bg-surface-alt"
+    >
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-soft">
+        {capa ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={capa} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <Image
+            src="/assets/logo/mascote-192.png"
+            alt=""
+            width={192}
+            height={192}
+            className="h-9 w-9"
+          />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-display font-bold text-ink">{obra.name}</p>
+        {obra.location && <p className="truncate text-micro text-ink-soft">{obra.location}</p>}
+      </div>
+      {fase && (
+        <span className="chip" style={{ "--chip": fase.color } as React.CSSProperties}>
+          {fase.name}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 export default async function Home() {
   const supabase = await createClient();
 
-  const { data: obras } = await supabase
+  // Arquivada não some do app — some da lista do dia a dia (D95).
+  const { data } = await supabase
     .from("obras")
     .select("id, name, location, photo_url, status, fases:current_phase_id(name, color)")
-    .eq("status", "active")
     .order("created_at", { ascending: false });
+
+  const obras = (data ?? []) as ObraDaLista[];
+  const ativas = obras.filter((obra) => obra.status !== "archived");
+  const arquivadas = obras.filter((obra) => obra.status === "archived");
+
+  const assinadas = await assinarCapas(
+    supabase,
+    obras.map((obra) => obra.photo_url),
+  );
 
   return (
     <main className="flex flex-1 flex-col overflow-hidden">
@@ -19,8 +73,8 @@ export default async function Home() {
         <LogoutButton />
       </header>
 
-      <div className="mx-auto w-full max-w-2xl flex-1 overflow-y-auto p-4">
-        {!obras || obras.length === 0 ? (
+      <div className="mx-auto w-full max-w-2xl flex-1 overflow-y-auto p-4 pb-28">
+        {ativas.length === 0 && arquivadas.length === 0 ? (
           <div className="mt-12 flex flex-col items-center gap-3 text-center">
             {/* Mascote oficial — empty state (09_ASSETS) */}
             <Image
@@ -38,48 +92,41 @@ export default async function Home() {
             </p>
           </div>
         ) : (
-          <ul className="space-y-3">
-            {obras.map((obra) => {
-              const fase = Array.isArray(obra.fases) ? obra.fases[0] : obra.fases;
-              return (
-                <li key={obra.id}>
-                  <Link
-                    href={`/obras/${obra.id}/conversa`}
-                    className="flex items-center gap-3 rounded-card bg-surface p-3 shadow-card active:bg-surface-alt"
-                  >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-soft">
-                      {obra.photo_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={obra.photo_url} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <Image
-                          src="/assets/logo/mascote-192.png"
-                          alt=""
-                          width={192}
-                          height={192}
-                          className="h-9 w-9"
-                        />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-display font-bold text-ink">{obra.name}</p>
-                      {obra.location && (
-                        <p className="truncate text-micro text-ink-soft">{obra.location}</p>
-                      )}
-                    </div>
-                    {fase && (
-                      <span
-                        className="chip"
-                        style={{ "--chip": fase.color } as React.CSSProperties}
-                      >
-                        {fase.name}
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="space-y-6">
+            {ativas.length > 0 && (
+              <ul className="space-y-3">
+                {ativas.map((obra) => (
+                  <li key={obra.id}>
+                    <CartaoDeObra obra={obra} capa={urlDaCapa(obra.photo_url, assinadas)} />
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {ativas.length === 0 && (
+              <p className="pt-8 text-center text-caption text-ink-soft">
+                Nenhuma obra ativa. As arquivadas continuam aqui embaixo.
+              </p>
+            )}
+
+            {arquivadas.length > 0 && (
+              // <details> em vez de estado: fica fechado, não rouba a atenção, e
+              // ainda assim a obra arquivada continua a dois toques de distância.
+              <details className="group">
+                <summary className="cursor-pointer list-none py-2 text-micro font-semibold uppercase tracking-wide text-ink-soft">
+                  <span className="inline-block transition-transform group-open:rotate-90">›</span>{" "}
+                  Arquivadas ({arquivadas.length})
+                </summary>
+                <ul className="space-y-3 pt-2 opacity-75">
+                  {arquivadas.map((obra) => (
+                    <li key={obra.id}>
+                      <CartaoDeObra obra={obra} capa={urlDaCapa(obra.photo_url, assinadas)} />
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
         )}
       </div>
 

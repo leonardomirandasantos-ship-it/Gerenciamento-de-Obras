@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { assinarCapas, urlDaCapa } from "@/lib/fotoObra";
 import { ConfiguracoesObra } from "@/components/obra/ConfiguracoesObra";
 import type { Fase, Obra } from "@/lib/types";
 
@@ -20,5 +21,7 @@ export default async function ConfiguracoesPage({
     notFound();
   }
 
-  return <ConfiguracoesObra obra={obra as Obra} fases={(fases ?? []) as Fase[]} />;
+  const capa = urlDaCapa(obra.photo_url, await assinarCapas(supabase, [obra.photo_url]));
+
+  return <ConfiguracoesObra obra={obra as Obra} fases={(fases ?? []) as Fase[]} capa={capa} />;
 }

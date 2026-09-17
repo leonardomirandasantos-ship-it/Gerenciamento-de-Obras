@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { EventBubble } from "./EventBubble";
 import { ComposerInput } from "./ComposerInput";
@@ -28,6 +28,8 @@ export function ConversaClient({
 }) {
   const [editando, setEditando] = useState<Evento | null>(null);
   const [pendentes, setPendentes] = useState<Pendente[]>([]);
+  const [longeDoFim, setLongeDoFim] = useState(false);
+  const feedRef = useRef<HTMLUListElement>(null);
 
   // Quando o servidor devolve os eventos já salvos, os otimistas saem de cena.
   // Ajuste durante o render (e não em efeito) para não disparar render em
@@ -40,6 +42,37 @@ export function ConversaClient({
 
   // Anti-irritação (D25): no máximo 1 destaque por superfície, nunca empilhar.
   const sugestaoAtiva = sugestoes.length > 0 ? sugestoes[sugestoes.length - 1] : null;
+
+  const irParaOFim = useCallback((comportamento: ScrollBehavior = "auto") => {
+    const feed = feedRef.current;
+    if (!feed) return;
+    feed.scrollTo({ top: feed.scrollHeight, behavior: comportamento });
+  }, []);
+
+  // Conversa abre na mensagem mais recente, como qualquer chat (D97).
+  // Exceção: chegando por "ver no chat", o alvo é a mensagem do link.
+  useEffect(() => {
+    const alvo = window.location.hash;
+    if (alvo.startsWith("#evento-")) {
+      document.querySelector(alvo)?.scrollIntoView({ block: "center" });
+      return;
+    }
+    irParaOFim();
+  }, [irParaOFim]);
+
+  // Mensagem nova desce a conversa — a não ser que ela esteja lendo o
+  // histórico mais acima, aí não tiro o texto de baixo dos olhos dela.
+  useEffect(() => {
+    if (!longeDoFim) irParaOFim();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventos, pendentes.length]);
+
+  function aoRolar() {
+    const feed = feedRef.current;
+    if (!feed) return;
+    const distanciaDoFim = feed.scrollHeight - feed.scrollTop - feed.clientHeight;
+    setLongeDoFim(distanciaDoFim > 240);
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -66,7 +99,7 @@ export function ConversaClient({
           </div>
         </div>
       ) : (
-        <ul className="flex-1 space-y-3 overflow-y-auto p-4">
+        <ul ref={feedRef} onScroll={aoRolar} className="flex-1 space-y-3 overflow-y-auto p-4">
           {eventos.map((evento) => (
             <li key={evento.id} id={`evento-${evento.id}`} className="space-y-2">
               <EventBubble evento={evento} onEditar={() => setEditando(evento)} />
@@ -89,6 +122,19 @@ export function ConversaClient({
         </ul>
       )}
 
+      {longeDoFim && (
+        <div className="pointer-events-none relative">
+          <button
+            type="button"
+            onClick={() => irParaOFim("smooth")}
+            className="pointer-events-auto absolute bottom-2 right-4 flex h-11 w-11 items-center justify-center rounded-full bg-surface text-lg text-primary shadow-card"
+            aria-label="Ir para a mensagem mais recente"
+          >
+            ↓
+          </button>
+        </div>
+      )}
+
       <ComposerInput
         obraId={obraId}
         faseAtualId={faseAtualId}
@@ -96,7 +142,12 @@ export function ConversaClient({
       />
 
       {editando && (
-        <EditBottomSheet evento={editando} fases={fases} onClose={() => setEditando(null)} />
+        <EditBottomSheet
+          evento={editando}
+          fases={fases}
+          obraId={obraId}
+          onClose={() => setEditando(null)}
+        />
       )}
     </div>
   );

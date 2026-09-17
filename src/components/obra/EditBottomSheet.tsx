@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { ambientesDoEvento } from "@/lib/ambientes";
 import { BottomSheet } from "./BottomSheet";
+import { SeletorDeAmbientes } from "./SeletorDeAmbientes";
 import {
   RÓTULO_TIPO,
   type Evento,
@@ -25,35 +27,70 @@ const TIPOS_SELECIONAVEIS: EventoKind[] = [
 export function EditBottomSheet({
   evento,
   fases,
+  obraId,
   onClose,
 }: {
   evento: Evento;
   fases: Fase[];
+  /** Necessário para gravar o tipo do favorecido, que é da obra, não do evento. */
+  obraId?: string;
   onClose: () => void;
 }) {
   const router = useRouter();
   const pagamentoAtual = evento.payload as {
     amount?: number;
     payeeName?: string;
+    payeeType?: "prestador" | "fornecedor";
   };
   const [kind, setKind] = useState<EventoKind>(evento.kind);
   const [phaseId, setPhaseId] = useState(evento.phase_id ?? "");
   const [valor, setValor] = useState(pagamentoAtual.amount?.toString() ?? "");
   const [favorecido, setFavorecido] = useState(pagamentoAtual.payeeName ?? "");
+  const [tipoFavorecido, setTipoFavorecido] = useState<"prestador" | "fornecedor" | "">(
+    pagamentoAtual.payeeType ?? "",
+  );
+  const [ambientes, setAmbientes] = useState<string[]>(
+    evento.kind === "E3_decisao" ? ambientesDoEvento(evento) : [],
+  );
   const [carregando, setCarregando] = useState(false);
 
   async function salvar() {
     setCarregando(true);
     const supabase = createClient();
 
-    const payload =
-      kind === "E7_pagamento"
-        ? {
-            ...evento.payload,
-            amount: valor ? parseFloat(valor.replace(",", ".")) : undefined,
-            payeeName: favorecido || undefined,
-          }
-        : evento.payload;
+    let payload: Record<string, unknown> = evento.payload;
+
+    if (kind === "E7_pagamento") {
+      payload = {
+        ...payload,
+        amount: valor ? parseFloat(valor.replace(",", ".")) : undefined,
+        payeeName: favorecido || undefined,
+        payeeType: tipoFavorecido || undefined,
+      };
+    }
+
+    if (kind === "E3_decisao") {
+      payload = {
+        ...payload,
+        environments: ambientes,
+        environment: ambientes[0],
+      };
+    }
+
+    // O tipo (prestador/fornecedor) é da PESSOA, não deste pagamento: vai
+    // para `favorecidos` e passa a valer para tudo o que ela já recebeu.
+    let favorecidoId = evento.favorecido_id;
+    if (kind === "E7_pagamento" && obraId && favorecido.trim() && tipoFavorecido) {
+      const { data: cadastro } = await supabase
+        .from("favorecidos")
+        .upsert(
+          { obra_id: obraId, name: favorecido.trim(), type: tipoFavorecido },
+          { onConflict: "obra_id,name" },
+        )
+        .select("id")
+        .single();
+      favorecidoId = cadastro?.id ?? favorecidoId;
+    }
 
     await supabase
       .from("eventos")
@@ -61,6 +98,7 @@ export function EditBottomSheet({
         kind,
         confidence: 1,
         phase_id: phaseId || null,
+        favorecido_id: favorecidoId,
         payload,
         edited: true,
       })
@@ -109,6 +147,13 @@ export function EditBottomSheet({
           ))}
         </div>
 
+        {kind === "E3_decisao" && (
+          <div className="mb-4 space-y-2">
+            <p className="text-caption font-semibold text-ink">Onde é essa decisão?</p>
+            <SeletorDeAmbientes selecionados={ambientes} onChange={setAmbientes} />
+          </div>
+        )}
+
         {kind === "E7_pagamento" && (
           <div className="mb-4 flex gap-2">
             <div className="w-28 space-y-1">
@@ -133,6 +178,33 @@ export function EditBottomSheet({
                 className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
               />
             </div>
+          </div>
+        )}
+
+        {kind === "E7_pagamento" && favorecido.trim() && (
+          <div className="mb-4 space-y-2">
+            <p className="text-caption font-semibold text-ink">
+              {favorecido.trim()} é prestador ou fornecedor?
+            </p>
+            <div className="flex gap-2">
+              {(["prestador", "fornecedor"] as const).map((tipo) => (
+                <button
+                  key={tipo}
+                  type="button"
+                  onClick={() => setTipoFavorecido(tipoFavorecido === tipo ? "" : tipo)}
+                  className={`flex-1 rounded-full border px-3 py-2 font-display text-caption font-semibold capitalize ${
+                    tipoFavorecido === tipo
+                      ? "border-primary bg-primary text-white"
+                      : "border-line text-ink-soft"
+                  }`}
+                >
+                  {tipo}
+                </button>
+              ))}
+            </div>
+            <p className="text-micro text-ink-soft">
+              Vale para todos os pagamentos dessa pessoa, não só para este.
+            </p>
           </div>
         )}
 

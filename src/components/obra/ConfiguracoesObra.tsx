@@ -1,12 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { caminhoDaCapa } from "@/lib/fotoObra";
 import { PALETA_DE_FASES } from "@/lib/tokens";
 import type { Fase, Obra } from "@/lib/types";
 
-export function ConfiguracoesObra({ obra, fases }: { obra: Obra; fases: Fase[] }) {
+export function ConfiguracoesObra({
+  obra,
+  fases,
+  capa,
+}: {
+  obra: Obra;
+  fases: Fase[];
+  /** URL já assinada da capa atual (o bucket é privado). */
+  capa: string | null;
+}) {
   const router = useRouter();
   const [name, setName] = useState(obra.name);
   const [location, setLocation] = useState(obra.location ?? "");
@@ -14,6 +25,8 @@ export function ConfiguracoesObra({ obra, fases }: { obra: Obra; fases: Fase[] }
   const [expectedEndDate, setExpectedEndDate] = useState(obra.expected_end_date ?? "");
   const [novaFase, setNovaFase] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [trocandoCapa, setTrocandoCapa] = useState(false);
+  const capaInputRef = useRef<HTMLInputElement>(null);
 
   async function salvarObra() {
     setSalvando(true);
@@ -80,6 +93,38 @@ export function ConfiguracoesObra({ obra, fases }: { obra: Obra; fases: Fase[] }
     router.refresh();
   }
 
+  /** A capa vai para o mesmo bucket privado dos anexos, na pasta do usuário. */
+  async function trocarCapa(file: File) {
+    setTrocandoCapa(true);
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setTrocandoCapa(false);
+      return;
+    }
+
+    const caminho = caminhoDaCapa(user.id, obra.id, file.name);
+    const { error } = await supabase.storage.from("anexos").upload(caminho, file);
+
+    if (!error) {
+      await supabase.from("obras").update({ photo_url: caminho }).eq("id", obra.id);
+    }
+
+    setTrocandoCapa(false);
+    router.refresh();
+  }
+
+  async function removerCapa() {
+    setTrocandoCapa(true);
+    const supabase = createClient();
+    await supabase.from("obras").update({ photo_url: null }).eq("id", obra.id);
+    setTrocandoCapa(false);
+    router.refresh();
+  }
+
   async function arquivarObra() {
     const supabase = createClient();
     await supabase.from("obras").update({ status: "archived" }).eq("id", obra.id);
@@ -87,10 +132,67 @@ export function ConfiguracoesObra({ obra, fases }: { obra: Obra; fases: Fase[] }
     router.refresh();
   }
 
+  async function desarquivarObra() {
+    const supabase = createClient();
+    await supabase.from("obras").update({ status: "active" }).eq("id", obra.id);
+    router.refresh();
+  }
+
   return (
     <div className="flex-1 space-y-6 overflow-y-auto p-4">
-      <section className="space-y-3 rounded-card bg-surface shadow-card p-4">
-        <h2 className="text-sm font-semibold text-ink">Dados da obra</h2>
+      <section className="space-y-3 rounded-card bg-surface p-4 shadow-card">
+        <h2 className="font-display text-section font-bold text-ink">Dados da obra</h2>
+
+        {/* Capa da obra: sem foto, fica o mascote — que é padrão, não erro. */}
+        <div className="flex items-center gap-3">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-soft">
+            {capa ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={capa} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <Image
+                src="/assets/logo/mascote-192.png"
+                alt=""
+                width={192}
+                height={192}
+                className="h-11 w-11"
+              />
+            )}
+          </div>
+
+          <input
+            ref={capaInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) trocarCapa(file);
+              e.target.value = "";
+            }}
+          />
+
+          <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => capaInputRef.current?.click()}
+              disabled={trocandoCapa}
+              className="rounded-card border border-primary px-3 py-2 font-display text-caption font-semibold text-primary disabled:opacity-50"
+            >
+              {trocandoCapa ? "Enviando..." : capa ? "Trocar foto" : "Escolher foto"}
+            </button>
+            {capa && (
+              <button
+                type="button"
+                onClick={removerCapa}
+                disabled={trocandoCapa}
+                className="rounded-card border border-line px-3 py-2 font-display text-caption font-semibold text-ink-soft disabled:opacity-50"
+              >
+                Remover
+              </button>
+            )}
+          </div>
+        </div>
 
         <div className="space-y-1">
           <label className="text-xs font-medium text-ink-soft">Nome</label>
@@ -141,10 +243,10 @@ export function ConfiguracoesObra({ obra, fases }: { obra: Obra; fases: Fase[] }
         </button>
       </section>
 
-      <section className="space-y-3 rounded-card bg-surface shadow-card p-4">
+      <section className="space-y-3 rounded-card bg-surface p-4 shadow-card">
         <div>
-          <h2 className="text-sm font-semibold text-ink">Fases da obra</h2>
-          <p className="text-xs text-ink-soft">Use as setas para reordenar.</p>
+          <h2 className="font-display text-section font-bold text-ink">Fases da obra</h2>
+          <p className="text-micro text-ink-soft">Use as setas para reordenar.</p>
         </div>
 
         <ul className="space-y-2">
@@ -217,9 +319,29 @@ export function ConfiguracoesObra({ obra, fases }: { obra: Obra; fases: Fase[] }
         </div>
       </section>
 
-      <button type="button" onClick={arquivarObra} className="w-full py-2 text-sm text-alert">
-        Arquivar obra
-      </button>
+      {obra.status === "archived" ? (
+        <div className="space-y-2 rounded-card bg-surface p-4 shadow-card">
+          <p className="text-caption text-ink-soft">
+            Esta obra está arquivada. Ela sai da lista do dia a dia, mas o histórico continua
+            inteiro e você pode reativar quando precisar.
+          </p>
+          <button
+            type="button"
+            onClick={desarquivarObra}
+            className="w-full rounded-card border border-primary px-3 py-2.5 font-display text-caption font-semibold text-primary"
+          >
+            Reativar obra
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={arquivarObra}
+          className="w-full py-2 font-display text-caption font-semibold text-alert"
+        >
+          Arquivar obra
+        </button>
+      )}
     </div>
   );
 }
