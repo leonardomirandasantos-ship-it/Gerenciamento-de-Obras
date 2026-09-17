@@ -41,39 +41,47 @@ export const TIPO_PARA_KIND: Record<TipoEntendido, EventoKind> = {
   documentacao: "E4_documentacao",
 };
 
-/** Schema de saída estruturada — evita ter que garimpar JSON no meio de prosa. */
+/**
+ * Schema de saída estruturada — evita garimpar JSON no meio de prosa.
+ *
+ * Dois cuidados que evitam um 400 na primeira chamada: o `type` do Schema do
+ * Gemini é o enum do OpenAPI e vai em MAIÚSCULO; e `enum` dentro do schema
+ * exige `format: "enum"` em parte das versões, então `tipo` fica STRING solto
+ * e a validação acontece aqui no código, que já sabe traduzir e descartar.
+ */
 export const ESQUEMA_ENTENDIMENTO = {
-  type: "object",
+  type: "OBJECT",
   properties: {
     transcricao: {
-      type: "string",
+      type: "STRING",
       description: "Transcrição literal do áudio, em português. Vazio se for imagem.",
     },
     registros: {
-      type: "array",
+      type: "ARRAY",
       description: "Um item por assunto distinto. Não invente o que não foi dito.",
       items: {
-        type: "object",
+        type: "OBJECT",
         properties: {
           tipo: {
-            type: "string",
-            enum: ["pendencia", "gasto", "decisao", "orcamento", "comunicacao", "documentacao"],
+            type: "STRING",
+            description:
+              "Um de: pendencia, gasto, decisao, orcamento, comunicacao, documentacao.",
           },
           texto: {
-            type: "string",
+            type: "STRING",
             description: "O assunto em uma frase curta, nas palavras dela.",
           },
-          valor: { type: "number", description: "Só para gasto/orçamento, em reais." },
-          favorecido: { type: "string", description: "Quem recebeu o pagamento." },
-          prazo: { type: "string", description: "Data no formato YYYY-MM-DD." },
+          valor: { type: "NUMBER", description: "Só para gasto/orçamento, em reais." },
+          favorecido: { type: "STRING", description: "Quem recebeu o pagamento." },
+          prazo: { type: "STRING", description: "Data no formato YYYY-MM-DD." },
           ambientes: {
-            type: "array",
-            items: { type: "string" },
+            type: "ARRAY",
+            items: { type: "STRING" },
             description: "Só para decisão: ambientes da casa citados.",
           },
           itens: {
-            type: "array",
-            items: { type: "string" },
+            type: "ARRAY",
+            items: { type: "STRING" },
             description: "Só para pendência com vários itens: um item por linha.",
           },
         },
@@ -83,6 +91,20 @@ export const ESQUEMA_ENTENDIMENTO = {
   },
   required: ["transcricao", "registros"],
 } as const;
+
+/**
+ * O modelo pode devolver "Pendência", "pendencia" ou "PENDENCIA" — nenhuma
+ * dessas variações deveria custar um registro perdido.
+ */
+export function kindDoTipo(tipo: string | undefined): EventoKind | null {
+  if (!tipo) return null;
+  const limpo = tipo
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+  return TIPO_PARA_KIND[limpo as TipoEntendido] ?? null;
+}
 
 export function montarPrompt({
   ehAudio,

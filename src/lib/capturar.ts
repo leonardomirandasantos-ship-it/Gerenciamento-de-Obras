@@ -3,7 +3,7 @@ import { chaveSegura } from "./arquivos";
 import { extrairPrazoDeclarado } from "./datas";
 import { normalizarFavorecido } from "./pagamento";
 import { mimeLimpo } from "./audio";
-import { TIPO_PARA_KIND, type Entendimento, type RegistroEntendido } from "./entender";
+import { kindDoTipo, type Entendimento, type RegistroEntendido } from "./entender";
 import { classificar } from "./classify";
 import { extrairDadosPagamento } from "./pagamento";
 import type { AnexoTipo, EventoKind } from "./types";
@@ -322,7 +322,7 @@ async function criarDerivado(
   audioId: string,
   registro: RegistroEntendido,
 ): Promise<string | null> {
-  const kind = TIPO_PARA_KIND[registro.tipo];
+  const kind = kindDoTipo(registro.tipo);
   if (!kind) return null;
 
   const texto = (registro.itens?.length ? registro.itens.join("\n") : registro.texto)?.trim();
