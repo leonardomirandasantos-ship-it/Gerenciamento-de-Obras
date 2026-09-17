@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zap da Obra — Telas, Marca e Styleguide</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-paper:#F4F1EA; --surface:#FFFFFF; --surface-alt:#EDE8DD;
+  --ink:#2A2A28; --ink-soft:#6B675E; --line:#DED8CC;
+  --primary:#1F5C57; --primary-dark:#153F3B; --primary-soft:#DCE9E7;
+  --pending:#E0913A; --done:#3E8E5A; --info:#3A6EA5; --unclassified:#9B968C; --alert:#C0553B;
+  --phase-fundacao:#9B6A43; --phase-estrutura:#1F5C57; --phase-hidraulica:#3A6EA5;
+  --phase-eletrica:#E0913A; --phase-acabamento:#3E8E5A;
+  --font-display:"Nunito","SF Pro Rounded",system-ui,sans-serif;
+  --font-body:"Inter",system-ui,-apple-system,sans-serif;
+  --fs-title:20px; --lh-title:28px; --fs-section:16px; --lh-section:24px;
+  --fs-body:15px; --lh-body:22px; --fs-caption:13px; --lh-caption:18px;
+  --fs-micro:11px; --lh-micro:16px;
+  --radius-card:16px; --radius-bubble:18px; --radius-sheet:20px; --radius-pill:999px; --radius-fab:28px;
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px; --space-6:24px;
+  --screen-padding:16px; --card-gap:12px;
+  --shadow-card:0 1px 3px rgba(42,42,40,.08),0 1px 2px rgba(42,42,40,.04);
+  --shadow-sheet:0 -4px 16px rgba(42,42,40,.12);
+}
+.chip-material{--chip:var(--pending)} .chip-lembrete{--chip:var(--info)}
+.chip-decisao{--chip:var(--primary)} .chip-foto{--chip:var(--unclassified)}
+.chip-pagamento{--chip:var(--pending)} .chip-nao-class{--chip:var(--unclassified)}
+.chip-ok{--chip:var(--done)}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg-paper);color:var(--ink);
+     font-family:var(--font-body);font-size:var(--fs-body);line-height:var(--lh-body)}
+.wrap{max-width:1180px;margin:0 auto;padding:var(--space-6) var(--screen-padding) 90px}
+h1,h2,h3{font-family:var(--font-display);margin:0}
+h1{font-size:32px;line-height:40px;font-weight:700;color:var(--primary);margin:10px 0 4px}
+h2{font-size:23px;line-height:31px;font-weight:700;margin:46px 0 8px}
+h3{font-size:var(--fs-section);line-height:var(--lh-section);font-weight:600;margin:24px 0 10px}
+.sub{color:var(--ink-soft);font-size:var(--fs-caption);line-height:var(--lh-caption)}
+hr{border:0;border-top:1px solid var(--line);margin:30px 0}
+code{font-family:ui-monospace,monospace;font-size:12px;background:var(--surface);
+     border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.demo{background:var(--surface-alt);border:1px solid var(--line);
+      border-radius:var(--radius-card);padding:var(--space-4);margin:10px 0}
+.note{background:var(--primary-soft);border-radius:var(--radius-card);padding:var(--space-4);margin:14px 0}
+.warn{background:color-mix(in srgb,var(--alert) 9%,white);border:1px solid var(--alert);
+      border-radius:var(--radius-card);padding:var(--space-4);margin:14px 0}
+.nav{position:sticky;top:0;background:var(--bg-paper);border-bottom:1px solid var(--line);
+     padding:12px 0;margin-bottom:10px;z-index:9;display:flex;gap:18px;flex-wrap:wrap}
+.nav a{font-family:var(--font-display);font-weight:600;font-size:var(--fs-caption);
+       color:var(--primary);text-decoration:none}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px}
+.shot{background:var(--surface);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden}
+.shot img{width:100%;display:block;background:var(--surface-alt)}
+.shot .cap{padding:12px 14px}
+.shot .cap b{font-family:var(--font-display);font-size:var(--fs-caption);display:block}
+.shot .cap span{color:var(--ink-soft);font-size:var(--fs-micro)}
+
+.brandgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.bcard{background:var(--surface);border-radius:var(--radius-card);box-shadow:var(--shadow-card);
+       overflow:hidden;text-align:center}
+.bcard img{width:100%;display:block}
+.bcard .cap{padding:12px}
+.checker{background-image:linear-gradient(45deg,#e9e9e9 25%,transparent 25%,transparent 75%,#e9e9e9 75%),
+         linear-gradient(45deg,#e9e9e9 25%,transparent 25%,transparent 75%,#e9e9e9 75%);
+         background-size:20px 20px;background-position:0 0,10px 10px;padding:18px}
+.checker img{max-width:190px;margin:0 auto}
+
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--card-gap)}
+.sw{background:var(--surface);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden}
+.sw .box{height:62px} .sw .meta{padding:10px 12px}
+.sw b{display:block;font-family:var(--font-display);font-size:var(--fs-caption)}
+.sw span{color:var(--ink-soft);font-size:var(--fs-micro)}
+
+.chip{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-display);
+  font-size:var(--fs-micro);line-height:var(--lh-micro);font-weight:600;padding:4px 10px;
+  border-radius:var(--radius-pill);color:var(--chip,var(--primary));
+  background:color-mix(in srgb,var(--chip,var(--primary)) 14%,white);
+  border:1px solid color-mix(in srgb,var(--chip,var(--primary)) 35%,white);margin:2px}
+.bubble{background:var(--surface);border-radius:var(--radius-bubble);box-shadow:var(--shadow-card);
+  padding:var(--space-3) var(--space-4);max-width:78%;margin-bottom:var(--space-3)}
+.bubble .time{color:var(--ink-soft);font-size:var(--fs-micro);float:right;margin-left:10px}
+.bubble ul{margin:6px 0 4px;padding-left:18px}
+.suggestion{background:var(--primary-soft);border-radius:var(--radius-card);
+  padding:var(--space-4);max-width:88%;margin-bottom:var(--space-3)}
+.suggestion p{margin:0 0 10px;font-family:var(--font-display);font-weight:600}
+.suggestion .why{display:block;margin-top:8px;color:var(--ink-soft);font-size:var(--fs-micro)}
+.btn{font-family:var(--font-display);font-weight:600;font-size:var(--fs-body);border:0;
+  border-radius:var(--radius-pill);padding:10px 18px;cursor:pointer}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-ghost{background:transparent;color:var(--ink-soft)}
+.btn-block{display:block;width:100%;border-radius:14px;padding:14px}
+.btn-danger{background:transparent;color:var(--alert);font-weight:600}
+.card{background:var(--surface);border-radius:var(--radius-card);box-shadow:var(--shadow-card);
+  padding:var(--space-4);margin-bottom:var(--card-gap)}
+.tabs{display:flex;gap:var(--space-5);border-bottom:1px solid var(--line);overflow-x:auto;
+  background:var(--surface);padding:0 var(--screen-padding)}
+.tabs a{font-family:var(--font-display);font-size:var(--fs-caption);font-weight:600;
+  color:var(--ink-soft);text-decoration:none;padding:14px 0 12px;white-space:nowrap;
+  border-bottom:3px solid transparent}
+.tabs a.active{color:var(--primary);border-bottom-color:var(--primary)}
+.appbar{background:var(--primary);color:#fff;padding:12px var(--screen-padding);
+  display:flex;align-items:center;gap:12px}
+.appbar .avatar{width:38px;height:38px;border-radius:50%;background:var(--primary-soft);flex:none}
+.appbar b{font-family:var(--font-display);font-size:var(--fs-title)}
+.appbar .loc{display:block;font-size:var(--fs-micro);opacity:.85}
+.check{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check .cbox{width:20px;height:20px;border-radius:6px;flex:none;margin-top:2px;border:2px solid var(--pending)}
+.check.ok .cbox{background:var(--done);border-color:var(--done)}
+.check.ok .txt{color:var(--ink-soft);text-decoration:line-through}
+.check .obs{display:block;color:var(--ink-soft);font-size:var(--fs-caption)}
+.composer{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius-pill);padding:8px 8px 8px 16px;max-width:460px}
+.composer input{flex:1;border:0;outline:0;font-family:var(--font-body);font-size:var(--fs-body);background:transparent}
+.composer .send{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;
+  display:grid;place-items:center;flex:none}
+.fab{width:56px;height:56px;border-radius:var(--radius-fab);background:var(--primary);color:#fff;
+  display:grid;place-items:center;font-size:26px;box-shadow:var(--shadow-card)}
+.sheet{background:var(--surface);border-radius:var(--radius-sheet) var(--radius-sheet) 0 0;
+  box-shadow:var(--shadow-sheet);padding:var(--space-4) var(--space-4) var(--space-6);max-width:420px;margin:0 auto}
+.sheet .handle{width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 14px}
+.field{margin:14px 0 0}
+.field label{display:block;font-family:var(--font-display);font-weight:600;font-size:var(--fs-caption);margin-bottom:6px}
+.field .control{border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--ink-soft)}
+.empty{text-align:center;padding:var(--space-6)}
+.empty h3{font-size:var(--fs-title);margin:12px 0 6px}
+.empty p{color:var(--ink-soft);margin:0 0 14px}
+table{width:100%;border-collapse:collapse;font-size:var(--fs-caption)}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{font-family:var(--font-display)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <img src="../../public/assets/logo/logo-horizontal.png" alt="Zap da Obra" style="max-width:340px;display:block">
+  <h1>Telas, Marca e Styleguide</h1>
+  <p class="sub">Página única para <b>validação visual</b> do pacote antes do handoff para a IA de código.
+     Todas as imagens estão embutidas no ZIP — nada precisa ser baixado à parte.</p>
+
+  <nav class="nav">
+    <a href="#telas">1. Telas (15)</a>
+    <a href="#marca">2. Marca</a>
+    <a href="#cores">3. Cores</a>
+    <a href="#tipo">4. Tipografia</a>
+    <a href="#comp">5. Componentes</a>
+    <a href="#diverg">6. Divergências</a>
+  </nav>
+
+  <!-- ================= TELAS ================= -->
+  <h2 id="telas">1. Telas da V1 — 15 mockups</h2>
+  <p class="sub">Arquivos em <code>design/screens/</code>. São <b>referência de intenção visual</b>;
+     a especificação válida é <code>04_TELAS.md</code> + <code>03_DECISOES.md</code>.</p>
+  <div class="grid">
+    <div class="shot"><img src="screens/01-login.png" alt="Login"><div class="cap"><b>01 · Login</b><span>e-mail/senha + Google + entrar com link</span></div></div>
+    <div class="shot"><img src="screens/02-home.png" alt="Home"><div class="cap"><b>02 · Home</b><span>lista de obras, busca, FAB +</span></div></div>
+    <div class="shot"><img src="screens/03-nova-obra.png" alt="Nova obra"><div class="cap"><b>03 · Nova obra</b><span>foto, nome, cliente, local, datas</span></div></div>
+    <div class="shot"><img src="screens/04-conversa.png" alt="Conversa"><div class="cap"><b>04 · Conversa ⭐</b><span>feed + chips + sugestão inline + input</span></div></div>
+    <div class="shot"><img src="screens/05-empty-state.png" alt="Empty state"><div class="cap"><b>05 · Empty state</b><span>“Comece jogando tudo aqui”</span></div></div>
+    <div class="shot"><img src="screens/06-checklists.png" alt="Checklists"><div class="cap"><b>06 · Checklists</b><span>checklist vivo, falta/ok, progresso</span></div></div>
+    <div class="shot"><img src="screens/07-documentacao.png" alt="Documentação"><div class="cap"><b>07 · Documentação</b><span>diário por fase, legendas</span></div></div>
+    <div class="shot"><img src="screens/08-foto-tela-cheia.png" alt="Foto tela cheia"><div class="cap"><b>08 · Foto tela cheia</b><span>legenda + fase editáveis</span></div></div>
+    <div class="shot"><img src="screens/09-comprovante-pix.png" alt="Comprovante PIX"><div class="cap"><b>09 · Comprovante PIX</b><span>host de pagamentos + sugestão</span></div></div>
+    <div class="shot"><img src="screens/10-editar-bottom-sheet.png" alt="Editar registro"><div class="cap"><b>10 · Editar registro</b><span>bottom sheet único (D46)</span></div></div>
+    <div class="shot"><img src="screens/11-decisoes.png" alt="Decisões"><div class="cap"><b>11 · Decisões da obra</b><span>abas no topo (versão correta)</span></div></div>
+    <div class="shot"><img src="screens/12-dash-obra.png" alt="Dash"><div class="cap"><b>12 · Dash da obra</b><span>gasto total, rosca por fase, por pessoa</span></div></div>
+    <div class="shot"><img src="screens/13-prestador.png" alt="Prestador"><div class="cap"><b>13 · Prestador</b><span>histórico + comprovantes</span></div></div>
+    <div class="shot"><img src="screens/14-orcamentos.png" alt="Orçamentos"><div class="cap"><b>14 · Orçamentos</b><span>por produto / por fornecedor</span></div></div>
+    <div class="shot"><img src="screens/15-config-fases.png" alt="Config e fases"><div class="cap"><b>15 · Config + Fases</b><span>5 fases fixas + adicionar/reordenar</span></div></div>
+  </div>
+
+  <hr>
+
+  <!-- ================= MARCA ================= -->
+  <h2 id="marca">2. Marca</h2>
+  <div class="warn">
+    <b>⚠️ Regra nº 1 do handoff:</b>
+    <span class="sub" style="color:var(--ink)">nunca recrie o logo. Use os arquivos de <code>assets/logo/</code>.</span>
+  </div>
+  <div class="brandgrid">
+    <div class="bcard">
+      <img src="../../public/assets/logo/logo-horizontal.png" alt="Logo horizontal">
+      <div class="cap"><b style="font-family:var(--font-display)">Logo horizontal</b>
+        <div class="sub"><code>logo-horizontal.png</code> · login, cabeçalhos, materiais</div></div>
+    </div>
+    <div class="bcard">
+      <div class="checker"><img src="../../public/assets/logo/mascote-1024.png" alt="Mascote transparente"></div>
+      <div class="cap"><b style="font-family:var(--font-display)">Mascote (fundo transparente)</b>
+        <div class="sub"><code>mascote-1024/512/192.png</code> · empty states, loaders, avatar</div></div>
+    </div>
+    <div class="bcard">
+      <img src="../../public/assets/logo/app-icon-512.png" alt="App icon" style="max-width:240px;margin:14px auto">
+      <div class="cap"><b style="font-family:var(--font-display)">App icon</b>
+        <div class="sub"><code>app-icon-512.png</code> · PWA manifest, home screen</div></div>
+    </div>
+  </div>
+
+  <h3>Board de identidade</h3>
+  <div class="bcard"><img src="brand/brand-board.png" alt="Brand board"></div>
+
+  <h3>Kit de aplicação / brindes</h3>
+  <div class="bcard"><img src="brand/kit-brindes.png" alt="Kit de brindes"></div>
+
+  <hr>
+
+  <!-- ================= CORES ================= -->
+  <h2 id="cores">3. Cores (tokens)</h2>
+  <h3>Base</h3>
+  <div class="swatches">
+    <div class="sw"><div class="box" style="background:var(--bg-paper)"></div><div class="meta"><b>--bg-paper</b><span>#F4F1EA · fundo</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--surface);border-bottom:1px solid var(--line)"></div><div class="meta"><b>--surface</b><span>#FFFFFF · cartões</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--surface-alt)"></div><div class="meta"><b>--surface-alt</b><span>#EDE8DD</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--ink)"></div><div class="meta"><b>--ink</b><span>#2A2A28 · texto</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--ink-soft)"></div><div class="meta"><b>--ink-soft</b><span>#6B675E</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--line)"></div><div class="meta"><b>--line</b><span>#DED8CC</span></div></div>
+  </div>
+  <h3>Primário</h3>
+  <div class="swatches">
+    <div class="sw"><div class="box" style="background:var(--primary)"></div><div class="meta"><b>--primary</b><span>#1F5C57</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--primary-dark)"></div><div class="meta"><b>--primary-dark</b><span>#153F3B · pressed</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--primary-soft)"></div><div class="meta"><b>--primary-soft</b><span>#DCE9E7 · sugestão</span></div></div>
+  </div>
+  <h3>Status (semânticas)</h3>
+  <div class="swatches">
+    <div class="sw"><div class="box" style="background:var(--pending)"></div><div class="meta"><b>--pending</b><span>a comprar / pagamento</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--done)"></div><div class="meta"><b>--done</b><span>pago / concluído</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--info)"></div><div class="meta"><b>--info</b><span>lembrete / data</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--unclassified)"></div><div class="meta"><b>--unclassified</b><span>não classificado</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--alert)"></div><div class="meta"><b>--alert</b><span>excluir / atenção</span></div></div>
+  </div>
+  <h3>Fases da obra</h3>
+  <div class="swatches">
+    <div class="sw"><div class="box" style="background:var(--phase-fundacao)"></div><div class="meta"><b>Fundação</b><span>#9B6A43</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--phase-estrutura)"></div><div class="meta"><b>Estrutura</b><span>#1F5C57</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--phase-hidraulica)"></div><div class="meta"><b>Hidráulica</b><span>#3A6EA5</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--phase-eletrica)"></div><div class="meta"><b>Elétrica</b><span>#E0913A</span></div></div>
+    <div class="sw"><div class="box" style="background:var(--phase-acabamento)"></div><div class="meta"><b>Acabamento</b><span>#3E8E5A</span></div></div>
+  </div>
+
+  <hr>
+
+  <h2 id="tipo">4. Tipografia</h2>
+  <div class="demo">
+    <div style="font-family:var(--font-display);font-size:var(--fs-title);line-height:var(--lh-title);font-weight:600">Título de tela — Nunito 20/28 600</div>
+    <div style="font-family:var(--font-display);font-size:var(--fs-section);line-height:var(--lh-section);font-weight:600">Seção — Nunito 16/24 600</div>
+    <div>Corpo — Inter 15/22 400. Mande uma foto, uma lista de material ou um recado.</div>
+    <div class="sub">Legenda — Inter 13/18</div>
+    <div style="font-size:var(--fs-micro);color:var(--ink-soft)">Micro (chips/timestamp) — 11/16</div>
+  </div>
+
+  <hr>
+
+  <!-- ================= COMPONENTES ================= -->
+  <h2 id="comp">5. Componentes (implementação de referência)</h2>
+  <p class="sub">Tudo abaixo é <b>CSS real</b>. A IA de código deve copiar estes estilos, não reinventar.</p>
+
+  <h3>5.1 Chips de tipo</h3>
+  <div class="demo">
+    <span class="chip chip-material">material</span>
+    <span class="chip chip-lembrete">lembrete</span>
+    <span class="chip chip-decisao">decisão</span>
+    <span class="chip chip-foto">foto</span>
+    <span class="chip chip-pagamento">pagamento</span>
+    <span class="chip chip-nao-class">não classificado</span>
+  </div>
+
+  <h3>5.2 Header da obra + Tabs (D45 — sem navbar inferior)</h3>
+  <div class="demo" style="padding:0;overflow:hidden">
+    <div class="appbar"><div class="avatar"></div>
+      <div><b>Obra Ecologie</b><span class="loc">📍 São Paulo, SP</span></div></div>
+    <nav class="tabs">
+      <a href="#comp">Resumo</a><a href="#comp" class="active">Conversa</a><a href="#comp">Pendências</a>
+      <a href="#comp">Documentação</a><a href="#comp">Decisões</a><a href="#comp">Dash</a>
+    </nav>
+  </div>
+
+  <h3>5.3 Balão de evento + Cartão de sugestão</h3>
+  <div class="demo">
+    <div class="bubble"><span class="time">09:12</span><span class="chip chip-material">material</span>
+      <ul><li>600 estrutural 19x19x29</li><li>200 canaleta 19</li><li>80 estrutural 14x19x29</li></ul></div>
+    <div class="suggestion"><p>Transformar em checklist?</p>
+      <button class="btn btn-primary">Sim</button><button class="btn btn-ghost">agora não</button>
+      <span class="why">Detectei uma lista com vários itens.</span></div>
+    <div class="bubble"><span class="time">10:05</span><span class="chip chip-lembrete">lembrete</span>
+      <div>Comprar cimento até sexta</div></div>
+    <div class="bubble"><span class="time">10:12</span><span class="chip chip-nao-class">não classificado</span>
+      <div>falar com o Zé sobre a laje</div></div>
+  </div>
+
+  <h3>5.4 Checklist</h3>
+  <div class="demo">
+    <div class="card">
+      <b style="font-family:var(--font-display)">Lista de material</b>
+      <div class="sub">da conversa de 07/05 · 2/4</div>
+      <div class="check ok"><div class="cbox"></div><div class="txt">Estrutural 19x19x29</div></div>
+      <div class="check ok"><div class="cbox"></div><div class="txt">Canaleta 19</div></div>
+      <div class="check"><div class="cbox"></div><div class="txt">Vergalhão 10mm<span class="obs">comprar na loja do João</span></div></div>
+      <div class="check"><div class="cbox"></div><div class="txt">Brita</div></div>
+    </div>
+  </div>
+
+  <h3>5.5 Botões, FAB e input do chat</h3>
+  <div class="demo">
+    <button class="btn btn-primary">Entrar</button>
+    <button class="btn btn-ghost">agora não</button>
+    <button class="btn btn-danger">🗑 Excluir registro</button>
+    <div style="margin:16px 0"><div class="fab">+</div></div>
+    <div class="composer"><input placeholder="Mensagem"><span>📎</span><span>🎙️</span><div class="send">➤</div></div>
+  </div>
+
+  <h3>5.6 Bottom sheet “Editar registro” (D46)</h3>
+  <div class="demo" style="background:var(--ink);padding-top:26px">
+    <div class="sheet">
+      <div class="handle"></div>
+      <b style="font-family:var(--font-display);font-size:var(--fs-title)">Editar registro</b>
+      <div class="card" style="margin-top:12px;box-shadow:none;background:var(--surface-alt)">
+        Comprar cimento até sexta<span class="sub" style="display:block">16/09 às 09:12</span></div>
+      <div class="field"><label>Tipo</label>
+        <span class="chip chip-material">material</span>
+        <span class="chip chip-lembrete" style="outline:2px solid var(--info)">lembrete</span>
+        <span class="chip chip-decisao">decisão</span>
+        <span class="chip chip-foto">foto</span>
+        <span class="chip chip-pagamento">pagamento</span></div>
+      <div class="field"><label>Fase (etapa da obra)</label><div class="control">Estrutura ⌄</div></div>
+      <div class="field"><label>Data</label><div class="control">20/09 ⌄</div></div>
+      <div class="field"><button class="btn btn-primary btn-block">Salvar</button></div>
+      <div style="text-align:center;margin-top:10px"><button class="btn btn-danger">🗑 Excluir registro</button></div>
+    </div>
+  </div>
+
+  <h3>5.7 Empty state</h3>
+  <div class="demo">
+    <div class="empty">
+      <img src="../../public/assets/logo/mascote-512.png" alt="" style="width:120px">
+      <h3>Comece jogando tudo aqui</h3>
+      <p>Mande uma foto, uma lista de material ou um recado.<br>A gente organiza pra você.</p>
+      <span class="chip chip-foto">📷 Foto</span>
+      <span class="chip chip-material">📝 Lista</span>
+      <span class="chip chip-lembrete">🎙️ Áudio</span>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2 id="diverg">6. Divergências: mockup × especificação</h2>
+  <div class="warn"><b>Regra: em conflito, o texto vence o pixel.</b></div>
+  <table>
+    <tr><th>#</th><th>No mockup</th><th>O correto (implementar assim)</th></tr>
+    <tr><td>D45</td><td>Versão antiga de “Decisões” tinha navbar inferior (em <code>design/_obsoleto/</code>)</td><td><b>Descartada.</b> Abas no topo — usar <code>11-decisoes.png</code></td></tr>
+    <tr><td>D45</td><td>Checklists, Documentação, Dash e Prestador com header simples</td><td>Devem ter as <b>abas no topo</b></td></tr>
+    <tr><td>D47</td><td>Nem todo mockup mostra a localização</td><td>Header sempre com <b>nome + localização</b></td></tr>
+    <tr><td>—</td><td>Cores aproximadas nos mockups</td><td>Cor real: <code>--primary #1F5C57</code> dos tokens</td></tr>
+    <tr><td>—</td><td>Fontes aproximadas</td><td><b>Nunito</b> (display) + <b>Inter</b> (corpo)</td></tr>
+  </table>
+
+  <hr>
+  <p class="sub">Zap da Obra · validação visual v2 · usar junto de <code>04_TELAS.md</code>, <code>03_DECISOES.md</code> e <code>09_ASSETS_E_DESIGN_HANDOFF.md</code></p>
+</div>
+</body>
+</html>

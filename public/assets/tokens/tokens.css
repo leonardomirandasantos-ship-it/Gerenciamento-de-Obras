@@ -1,0 +1,36 @@
+/* =========================================================
+   Zap da Obra — Design Tokens (FONTE DA VERDADE)
+   Importe este arquivo e use SEMPRE as variaveis.
+   NUNCA escreva um hex solto no codigo do app.
+   ========================================================= */
+:root{
+  --bg-paper:#F4F1EA; --surface:#FFFFFF; --surface-alt:#EDE8DD;
+  --ink:#2A2A28; --ink-soft:#6B675E; --line:#DED8CC;
+  --primary:#1F5C57; --primary-dark:#153F3B; --primary-soft:#DCE9E7;
+  --pending:#E0913A; --done:#3E8E5A; --info:#3A6EA5;
+  --unclassified:#9B968C; --alert:#C0553B;
+  --phase-fundacao:#9B6A43; --phase-estrutura:#1F5C57; --phase-hidraulica:#3A6EA5;
+  --phase-eletrica:#E0913A; --phase-acabamento:#3E8E5A;
+  --font-display:"Nunito","SF Pro Rounded",system-ui,sans-serif;
+  --font-body:"Inter",system-ui,-apple-system,sans-serif;
+  --fs-title:20px;   --lh-title:28px;
+  --fs-section:16px; --lh-section:24px;
+  --fs-body:15px;    --lh-body:22px;
+  --fs-caption:13px; --lh-caption:18px;
+  --fs-micro:11px;   --lh-micro:16px;
+  --radius-card:16px; --radius-bubble:18px; --radius-sheet:20px;
+  --radius-pill:999px; --radius-fab:28px;
+  --space-1:4px; --space-2:8px; --space-3:12px;
+  --space-4:16px; --space-5:20px; --space-6:24px;
+  --screen-padding:16px; --card-gap:12px;
+  --shadow-card:0 1px 3px rgba(42,42,40,.08),0 1px 2px rgba(42,42,40,.04);
+  --shadow-sheet:0 -4px 16px rgba(42,42,40,.12);
+}
+/* Mapa: tipo de evento -> cor do chip */
+.chip-material  {--chip:var(--pending)}
+.chip-lembrete  {--chip:var(--info)}
+.chip-decisao   {--chip:var(--primary)}
+.chip-foto      {--chip:var(--unclassified)}
+.chip-pagamento {--chip:var(--pending)}
+.chip-nao-class {--chip:var(--unclassified)}
+.chip-ok        {--chip:var(--done)}
