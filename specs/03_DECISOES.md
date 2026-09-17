@@ -67,7 +67,7 @@
 | D34 | Criar obra estilo "grupo WhatsApp": foto + nome + opcionais | ✅ |
 | D35 | Cadastro/aceitar convite: NÃO na V1 (login simples; link por fora) | ✅ |
 | D36 | Convidar pessoas: manual/externo, sem tela no app na V1 | ✅ |
-| D37 | Menu "3 pontos": adiado, sem detalhar agora | 🟡 |
+| D37 | Menu "3 pontos": resolvido sem menu. O header inteiro da obra leva às Configurações (D96) e cada obra na home tem engrenagem (D121) — um destino direto em alvo grande valeu mais que uma lista de opções escondida | ✅ |
 | D38 | Editar/reclassificar/excluir evento entra na V1 (via bottom sheet) | ✅ |
 | D39 | "Decisões da obra" entra na V1 | ✅ |
 | D40 | Papéis/permissões: 1 usuário master; sem segregação na V1 | ✅ |

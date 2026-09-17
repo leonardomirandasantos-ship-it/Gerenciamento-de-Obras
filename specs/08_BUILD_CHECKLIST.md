@@ -17,7 +17,7 @@
 | 7 — Financeiro | ✅ resumo, prestador, orçamentos, agrupamento por favorecido e **leitura do comprovante por imagem** (D134) |
 | 8 — Configurações e fases | ✅ feito (reordenar por setas — D50) |
 | 9 — Login e acesso | 🟡 e-mail/senha funcionando; **Google exige configurar o provider no Supabase** |
-| 10 — Polimento | ⬜ pendente (inclui trocar os placeholders de logo pelos assets de marca) |
+| 10 — Polimento | 🟡 marca aplicada (D81), tokens como fonte única (D80), velocidade atacada (D65/D90/D91). Aberto: "fechar o dia" (D12) e excluir em lote (D53) |
 
 ---
 
