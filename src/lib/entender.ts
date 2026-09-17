@@ -122,7 +122,15 @@ export function montarPrompt({
   return `Você organiza registros de obra para uma engenheira brasileira. Ela manda
 ${ehAudio ? "um áudio gravado no canteiro" : "uma imagem (comprovante, nota ou documento)"} e você extrai o que dá para organizar.
 
-${ehAudio ? "Transcreva primeiro, literalmente, em português do Brasil. Ela usa jargão de obra (canaleta, rejunte, prumada, baldrame, contrapiso, requadro, chapisco) e nomes de material com medida (19x19x29). Mantenha os números exatos." : "Leia o que está escrito na imagem. Não descreva a imagem, extraia os dados."}
+${ehAudio ? "Transcreva primeiro, literalmente, em português do Brasil. Ela usa jargão de obra (canaleta, rejunte, prumada, baldrame, contrapiso, requadro, chapisco) e nomes de material com medida (19x19x29). Mantenha os números exatos." : `Leia o que está escrito na imagem. Não descreva a imagem, extraia os dados.
+
+Se for comprovante de pagamento (PIX, TED, boleto), o "favorecido" é quem RECEBEU
+o dinheiro — o campo "Recebedor", "Destinatário" ou "Beneficiário", nunca o
+pagador. O "valor" é o valor da transação em reais; "R$ 401,00" é 401. Ignore
+CPF, agência, conta, chave e código de autenticação: não precisamos desses dados.
+
+Se for foto do canteiro, sem texto para extrair, use o tipo "documentacao" e
+descreva em uma linha curta o que a foto mostra.`}
 
 Depois separe em registros. UM REGISTRO POR ASSUNTO: se ela falar de um pagamento
 e de uma compra pendente no mesmo áudio, são dois registros.
