@@ -1,49 +1,25 @@
-# Gerenciamento de Obras
+# Zap da Obra
 
-App para engenheiros e arquitetos registrarem o dia a dia de suas obras (gastos,
-pagamentos, reembolsos) de forma tão simples quanto uma conversa no WhatsApp,
-com uma gestão financeira organizada por trás.
+Um app que recebe conteúdo com a naturalidade de um grupo de WhatsApp (texto,
+foto, voz — zero fricção) e por trás organiza tudo em gestão financeira e
+documentação de obra: "o arquivo master da obra".
 
-Veja a visão completa do produto, personas, escopo do MVP e stack proposta em
-[DESIGN.md](./DESIGN.md).
+A especificação completa do produto (visão, JTBDs, fluxos, decisões
+normativas, telas, design system, marca, arquitetura técnica e checklist de
+build) está em [`specs/`](./specs/00_INDEX.md) — comece pelo `00_INDEX.md`.
+Esses arquivos são a fonte da verdade do produto: toda nova decisão que
+tomarmos deve ser refletida neles, não só no código, para que o projeto
+continue portátil entre ferramentas/IAs.
 
-Status: primeiro esqueleto do MVP (auth + convite) rodando; falta o feed de
-lançamentos por obra.
+Status: specs V1 fechadas, começando a implementação (ver
+`specs/08_BUILD_CHECKLIST.md`).
 
 ## Rodando localmente
 
-1. Instale as dependências:
-
-   ```bash
-   npm install
-   ```
-
-2. Copie `.env.example` para `.env.local` e preencha com a URL e a chave
-   pública (`anon`/`publishable`) do seu projeto Supabase (Project Settings >
-   API no painel do Supabase).
-
-3. No **SQL Editor** do seu projeto Supabase, rode o conteúdo de
-   [`supabase/schema.sql`](./supabase/schema.sql) uma vez — ele cria as
-   tabelas, as políticas de RLS e as funções de onboarding/convite.
-
-4. (Recomendado) Em Authentication > Sign In / Providers > Email, desative
-   "Confirm email". Como o acesso já é controlado pelo nosso próprio sistema
-   de convite, exigir confirmação por e-mail é uma fricção a mais sem
-   necessidade.
-
-5. Rode o servidor:
-
-   ```bash
-   npm run dev
-   ```
-
-6. Acesse `http://localhost:3000/onboarding` para criar a primeira empresa
-   (você vira `master`). Dali em diante, novos acessos são só por convite,
-   gerado dentro do app.
+_(em atualização conforme a stack da V1 é implementada — ver commits mais
+recentes ou perguntar no chat)_
 
 ## Deploy
 
-Pensado pra rodar direto do GitHub: conecte este repositório na
-[Vercel](https://vercel.com), configure as mesmas variáveis de ambiente do
-`.env.local` no painel do projeto, e cada push na `main` já gera uma nova
-versão publicada.
+Pensado pra rodar direto do GitHub: conectar este repositório na
+[Vercel](https://vercel.com) e cada push na `main` gera uma nova versão.
