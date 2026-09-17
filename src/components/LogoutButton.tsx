@@ -16,7 +16,7 @@ export function LogoutButton() {
   return (
     <button
       onClick={sair}
-      className="text-sm text-neutral-500 underline hover:text-neutral-800"
+      className="text-sm text-ink-soft underline"
     >
       Sair
     </button>

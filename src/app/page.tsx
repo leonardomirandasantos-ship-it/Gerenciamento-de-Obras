@@ -2,8 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/LogoutButton";
-import { GerarConvite } from "@/components/GerarConvite";
-import { NovaObraForm } from "@/components/NovaObraForm";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -16,68 +14,74 @@ export default async function Home() {
     redirect("/login");
   }
 
-  const { data: usuario } = await supabase
-    .from("usuarios")
-    .select("id, nome, papel, empresas(nome)")
-    .eq("auth_id", user.id)
-    .single();
-
-  if (!usuario) {
-    redirect("/onboarding");
-  }
-
   const { data: obras } = await supabase
     .from("obras")
-    .select("id, nome, status, criado_em")
-    .order("criado_em", { ascending: false });
-
-  const empresa = Array.isArray(usuario.empresas)
-    ? usuario.empresas[0]
-    : usuario.empresas;
+    .select("id, name, location, photo_url, status, fases:current_phase_id(name, color)")
+    .eq("status", "active")
+    .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 space-y-8 p-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">{empresa?.nome}</h1>
-          <p className="text-sm text-neutral-500">
-            Olá, {usuario.nome} ({usuario.papel})
-          </p>
-        </div>
+    <main className="mx-auto w-full max-w-2xl flex-1 p-4">
+      <header className="mb-6 flex items-center justify-between">
+        <h1 className="font-display text-xl font-bold text-ink">Minhas obras</h1>
         <LogoutButton />
       </header>
 
-      {usuario.papel === "master" && (
-        <section className="space-y-4">
-          <GerarConvite />
-          <NovaObraForm />
-        </section>
-      )}
-
-      <section className="space-y-2">
-        <h2 className="text-sm font-medium text-neutral-500">Obras</h2>
-
-        {!obras || obras.length === 0 ? (
-          <p className="text-sm text-neutral-400">
-            Nenhuma obra ainda.{" "}
-            {usuario.papel === "master" && "Crie a primeira acima."}
+      {!obras || obras.length === 0 ? (
+        <div className="mt-16 flex flex-col items-center gap-3 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft text-2xl">
+            🏗️
+          </div>
+          <p className="text-ink-soft">
+            Crie sua primeira obra e comece a jogar tudo aqui.
           </p>
-        ) : (
-          <ul className="divide-y divide-neutral-200 rounded-md border border-neutral-200">
-            {obras.map((obra) => (
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {obras.map((obra) => {
+            const fase = Array.isArray(obra.fases) ? obra.fases[0] : obra.fases;
+            return (
               <li key={obra.id}>
                 <Link
-                  href={`/obras/${obra.id}`}
-                  className="flex items-center justify-between px-4 py-3 text-sm hover:bg-neutral-50"
+                  href={`/obras/${obra.id}/conversa`}
+                  className="flex items-center gap-3 rounded-card border border-line bg-surface p-3 hover:bg-surface-alt"
                 >
-                  <span>{obra.nome}</span>
-                  <span className="text-neutral-400">{obra.status}</span>
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-soft text-lg">
+                    {obra.photo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={obra.photo_url} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      "🏠"
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-ink">{obra.name}</p>
+                    {obra.location && (
+                      <p className="truncate text-xs text-ink-soft">{obra.location}</p>
+                    )}
+                  </div>
+                  {fase && (
+                    <span
+                      className="shrink-0 rounded-full px-2 py-1 text-xs font-medium text-white"
+                      style={{ backgroundColor: fase.color }}
+                    >
+                      {fase.name}
+                    </span>
+                  )}
                 </Link>
               </li>
-            ))}
-          </ul>
-        )}
-      </section>
+            );
+          })}
+        </ul>
+      )}
+
+      <Link
+        href="/obras/nova"
+        className="fixed bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl text-white shadow-lg"
+        aria-label="Nova obra"
+      >
+        +
+      </Link>
     </main>
   );
 }
