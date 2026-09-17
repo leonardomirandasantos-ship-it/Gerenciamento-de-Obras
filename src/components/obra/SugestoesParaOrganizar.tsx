@@ -28,7 +28,7 @@ export function SugestoesParaOrganizar({
   const restantes = sugestoes.length - visiveis.length;
 
   return (
-    <section className="space-y-2">
+    <section id="secao-organizar" className="scroll-mt-16 space-y-2">
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="text-micro font-semibold uppercase tracking-wide text-ink-soft">
           Pra organizar
