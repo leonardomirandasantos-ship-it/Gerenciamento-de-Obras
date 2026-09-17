@@ -29,6 +29,8 @@ export type ChecklistPayload = {
 export type ListaPayload = {
   items?: string[];
   linkedChecklistId?: string;
+  /** Tirada das pendências; a mensagem continua na conversa. */
+  dismissed?: boolean;
 };
 
 export type DecisaoPayload = {

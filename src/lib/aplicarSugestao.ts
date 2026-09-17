@@ -30,12 +30,14 @@ export async function ignorarSugestao(sugestao: Sugestao, obraId: string) {
 export async function criarChecklistDeLista(
   evento: Evento,
   obraId: string,
-  marcarItem?: number,
+  marcarItem?: number | "todos",
 ) {
   const supabase = createClient();
   const rawText = evento.raw_text ?? "";
   const itens = itensParaChecklist(rawText).map((item, indice) =>
-    indice === marcarItem ? { ...item, status: "ok" as const } : item,
+    marcarItem === "todos" || indice === marcarItem
+      ? { ...item, status: "ok" as const }
+      : item,
   );
 
   const payload: ChecklistPayload = {
