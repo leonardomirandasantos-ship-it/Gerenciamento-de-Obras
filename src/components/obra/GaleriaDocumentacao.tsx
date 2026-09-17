@@ -94,7 +94,7 @@ function VisorFoto({
             value={legenda}
             onChange={(e) => setLegenda(e.target.value)}
             placeholder="Ex.: hidráulica da cozinha antes de fechar a parede"
-            className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+            className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
           />
         </div>
 
@@ -103,7 +103,7 @@ function VisorFoto({
           <select
             value={faseId}
             onChange={(e) => setFaseId(e.target.value)}
-            className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink"
+            className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink"
           >
             <option value="">Sem fase</option>
             {fases.map((fase) => (

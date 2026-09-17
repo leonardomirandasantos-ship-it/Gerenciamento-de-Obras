@@ -27,7 +27,7 @@ function ConteudoChecklist({ evento }: { evento: Evento }) {
 function ConteudoDecisao({ evento }: { evento: Evento }) {
   const payload = evento.payload as DecisaoPayload;
   if (!payload.title) {
-    return <p className="whitespace-pre-wrap text-sm text-ink">{evento.raw_text}</p>;
+    return <p className="whitespace-pre-wrap text-[15px] leading-[22px] text-ink">{evento.raw_text}</p>;
   }
 
   return (
@@ -43,7 +43,7 @@ export function EventBubble({ evento, onEditar }: { evento: Evento; onEditar: ()
   const prazo = (evento.payload as { date?: string }).date;
 
   return (
-    <div className="flex max-w-md flex-col gap-2 rounded-bubble rounded-tl-sm bg-surface p-3 shadow-sm">
+    <div className="flex max-w-[85%] flex-col gap-2 rounded-bubble rounded-tl-sm bg-surface p-3 shadow-sm">
       <div className="flex items-center justify-between gap-2">
         <span
           className="rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
@@ -63,7 +63,7 @@ export function EventBubble({ evento, onEditar }: { evento: Evento; onEditar: ()
       ) : evento.kind === "E3_decisao" ? (
         <ConteudoDecisao evento={evento} />
       ) : (
-        evento.raw_text && <p className="whitespace-pre-wrap text-sm text-ink">{evento.raw_text}</p>
+        evento.raw_text && <p className="whitespace-pre-wrap text-[15px] leading-[22px] text-ink">{evento.raw_text}</p>
       )}
 
       {evento.anexos && evento.anexos.length > 0 && (

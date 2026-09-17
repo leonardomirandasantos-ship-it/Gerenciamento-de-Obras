@@ -53,7 +53,7 @@ export function ListaOrcamentos({ obraId, eventos }: { obraId: string; eventos: 
         value={busca}
         onChange={(e) => setBusca(e.target.value)}
         placeholder="Buscar por fornecedor ou produto"
-        className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+        className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
       />
 
       <ul className="space-y-2">

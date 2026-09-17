@@ -68,7 +68,7 @@ export default function NovaObraPage() {
             placeholder="Ex.: Casa Ecologie"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+            className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
           />
         </div>
 
@@ -77,7 +77,7 @@ export default function NovaObraPage() {
           <input
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
-            className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+            className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
           />
         </div>
 
@@ -87,27 +87,27 @@ export default function NovaObraPage() {
             placeholder="Ex.: São Paulo, SP"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+            className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
           />
         </div>
 
         <div className="flex gap-3">
-          <div className="flex-1 space-y-1">
+          <div className="min-w-0 flex-1 space-y-1">
             <label className="text-sm font-medium text-ink">Início</label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+              className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
             />
           </div>
-          <div className="flex-1 space-y-1">
+          <div className="min-w-0 flex-1 space-y-1">
             <label className="text-sm font-medium text-ink">Previsão de término</label>
             <input
               type="date"
               value={expectedEndDate}
               onChange={(e) => setExpectedEndDate(e.target.value)}
-              className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+              className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
             />
           </div>
         </div>
@@ -119,7 +119,7 @@ export default function NovaObraPage() {
             placeholder="Endereço, observações..."
             value={details}
             onChange={(e) => setDetails(e.target.value)}
-            className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+            className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
           />
         </div>
 

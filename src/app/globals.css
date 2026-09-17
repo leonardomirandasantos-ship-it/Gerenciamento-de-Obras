@@ -30,6 +30,14 @@ body {
   background: var(--color-bg-paper);
   color: var(--color-ink);
   font-family: var(--font-body);
+  /* Cara de app, não de site (D58) */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Respeita a barra inferior do iPhone em elementos fixos no rodapé */
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
 h1, h2, h3, .font-display {

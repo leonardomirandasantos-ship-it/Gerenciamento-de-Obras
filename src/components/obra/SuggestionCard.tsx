@@ -34,7 +34,7 @@ export function SuggestionCard({
   }
 
   return (
-    <div className="max-w-md space-y-2 rounded-card bg-primary-soft p-3">
+    <div className="max-w-[85%] space-y-2 rounded-card bg-primary-soft p-3">
       <p className="text-[11px] text-ink-soft">{sugestao.gatilho}</p>
       <p className="text-sm font-medium text-ink">{sugestao.proposta}</p>
 

@@ -91,7 +91,7 @@ export function ComposerInput({ obraId }: { obraId: string }) {
   }
 
   return (
-    <div className="flex items-end gap-2 border-t border-line bg-surface p-3">
+    <div className="safe-bottom flex items-end gap-2 border-t border-line bg-surface px-3 pt-3">
       <input
         ref={fileInputRef}
         type="file"
@@ -106,15 +106,15 @@ export function ComposerInput({ obraId }: { obraId: string }) {
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="shrink-0 rounded-full p-2 text-xl text-ink-soft"
-        aria-label="Anexar"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl text-ink-soft active:bg-surface-alt"
+        aria-label="Anexar foto, vídeo ou PDF"
       >
         📎
       </button>
 
       <textarea
         rows={1}
-        placeholder="Escreva algo, cole uma lista, ou anexe uma foto..."
+        placeholder="Manda aqui..."
         value={texto}
         onChange={(e) => setTexto(e.target.value)}
         onKeyDown={(e) => {
@@ -123,16 +123,17 @@ export function ComposerInput({ obraId }: { obraId: string }) {
             enviarTexto();
           }
         }}
-        className="max-h-32 flex-1 resize-none rounded-bubble border border-line bg-surface-alt px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+        className="max-h-32 min-h-11 flex-1 resize-none rounded-bubble border border-line bg-surface-alt px-4 py-3 text-base leading-tight text-ink outline-none focus:border-primary"
       />
 
       <button
         type="button"
         onClick={enviarTexto}
         disabled={enviando || !texto.trim()}
-        className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-lg text-white disabled:opacity-40"
+        aria-label="Enviar"
       >
-        Enviar
+        ➤
       </button>
     </div>
   );

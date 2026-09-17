@@ -38,7 +38,7 @@ export function ListaDecisoes({ obraId, eventos }: { obraId: string; eventos: Ev
         value={busca}
         onChange={(e) => setBusca(e.target.value)}
         placeholder="Buscar por ambiente ou item"
-        className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+        className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
       />
 
       <div className="flex gap-2 overflow-x-auto pb-1">

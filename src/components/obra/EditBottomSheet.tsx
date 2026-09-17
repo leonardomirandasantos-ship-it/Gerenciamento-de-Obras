@@ -67,7 +67,7 @@ export function EditBottomSheet({
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/30" onClick={onClose}>
       <div
-        className="w-full rounded-t-sheet bg-surface p-4 pb-6"
+        className="safe-bottom max-h-[85dvh] w-full overflow-y-auto rounded-t-sheet bg-surface p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-line" />
@@ -103,7 +103,7 @@ export function EditBottomSheet({
                 inputMode="decimal"
                 value={valor}
                 onChange={(e) => setValor(e.target.value)}
-                className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+                className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
               />
             </div>
             <div className="flex-1 space-y-1">
@@ -112,7 +112,7 @@ export function EditBottomSheet({
                 value={favorecido}
                 onChange={(e) => setFavorecido(e.target.value)}
                 placeholder="Quem recebeu"
-                className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+                className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
               />
             </div>
           </div>
@@ -122,7 +122,7 @@ export function EditBottomSheet({
         <select
           value={phaseId}
           onChange={(e) => setPhaseId(e.target.value)}
-          className="mb-6 w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink"
+          className="mb-6 w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink"
         >
           <option value="">Sem fase</option>
           {fases.map((f) => (

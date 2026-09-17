@@ -106,7 +106,7 @@ export function ConfiguracoesObra({ obra, fases }: { obra: Obra; fases: Fase[] }
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+            className="w-full rounded-card border border-line bg-surface px-2.5 py-2.5 text-base text-ink outline-none focus:border-primary"
           />
         </div>
 
@@ -115,27 +115,27 @@ export function ConfiguracoesObra({ obra, fases }: { obra: Obra; fases: Fase[] }
           <input
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+            className="w-full rounded-card border border-line bg-surface px-2.5 py-2.5 text-base text-ink outline-none focus:border-primary"
           />
         </div>
 
         <div className="flex gap-3">
-          <div className="flex-1 space-y-1">
+          <div className="min-w-0 flex-1 space-y-1">
             <label className="text-xs font-medium text-ink-soft">Início</label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+              className="w-full rounded-card border border-line bg-surface px-2.5 py-2.5 text-base text-ink outline-none focus:border-primary"
             />
           </div>
-          <div className="flex-1 space-y-1">
+          <div className="min-w-0 flex-1 space-y-1">
             <label className="text-xs font-medium text-ink-soft">Previsão</label>
             <input
               type="date"
               value={expectedEndDate}
               onChange={(e) => setExpectedEndDate(e.target.value)}
-              className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+              className="w-full rounded-card border border-line bg-surface px-2.5 py-2.5 text-base text-ink outline-none focus:border-primary"
             />
           </div>
         </div>
@@ -194,7 +194,7 @@ export function ConfiguracoesObra({ obra, fases }: { obra: Obra; fases: Fase[] }
                   const valor = e.target.value.trim();
                   if (valor && valor !== fase.name) renomearFase(fase, valor);
                 }}
-                className="min-w-0 flex-1 rounded-card border border-line bg-surface px-2 py-1.5 text-sm text-ink outline-none focus:border-primary"
+                className="min-w-0 flex-1 rounded-card border border-line bg-surface px-2 py-2 text-base text-ink outline-none focus:border-primary"
               />
 
               <button
@@ -214,7 +214,7 @@ export function ConfiguracoesObra({ obra, fases }: { obra: Obra; fases: Fase[] }
             value={novaFase}
             onChange={(e) => setNovaFase(e.target.value)}
             placeholder="Nova fase"
-            className="min-w-0 flex-1 rounded-card border border-dashed border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+            className="min-w-0 flex-1 rounded-card border border-dashed border-line bg-surface px-2.5 py-2.5 text-base text-ink outline-none focus:border-primary"
           />
           <button
             type="button"
