@@ -145,7 +145,7 @@ Prazo: hoje é ${hoje}. Converta o que ela falar ("sexta", "amanhã", "semana qu
 "dia 20") para YYYY-MM-DD. Só preencha prazo quando ela declarar um prazo — se só
 citou uma data de passagem, deixe vazio.
 ${favorecidos ? `\nPessoas e empresas que já receberam nesta obra (use o nome exatamente assim se for uma delas): ${favorecidos}.` : ""}
-${ambientes ? `\nAmbientes já usados nesta obra: ${ambientes}. Pode criar um novo se ela citar outro.` : ""}
+${ambientes ? `\nAmbientes já usados nesta obra: ${ambientes}. REUSE um destes quando servir — "banheiro da suíte" é "Banheiros". Só crie um nome novo se ela citar um ambiente que não cabe em nenhum.` : ""}
 ${fases ? `\nFases da obra: ${fases}.` : ""}
 
 Regras finais:
