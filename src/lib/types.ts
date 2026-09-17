@@ -7,6 +7,7 @@ export type EventoKind =
   | "E6_comunicacao"
   | "E7_pagamento"
   | "E8_orcamento"
+  | "E9_audio"
   | "unclassified";
 
 export type AnexoTipo = "foto" | "video" | "pdf" | "audio";
@@ -31,6 +32,15 @@ export type ListaPayload = {
   linkedChecklistId?: string;
   /** Tirada das pendências; a mensagem continua na conversa. */
   dismissed?: boolean;
+};
+
+/** O que o áudio virou: transcrição guardada e quantos registros saíram dele. */
+export type AudioPayload = {
+  fileName?: string;
+  transcript?: string;
+  durationSeconds?: number;
+  /** Ids dos eventos derivados, para o card do áudio saber o que gerou. */
+  derivedEventIds?: string[];
 };
 
 export type DecisaoPayload = {
@@ -129,6 +139,7 @@ export const RÓTULO_TIPO: Record<EventoKind, string> = {
   E6_comunicacao: "comunicação",
   E7_pagamento: "gasto",
   E8_orcamento: "orçamento",
+  E9_audio: "áudio",
   unclassified: "não classificado",
 };
 
@@ -141,5 +152,6 @@ export const COR_TIPO: Record<EventoKind, string> = {
   E6_comunicacao: "var(--color-alert)",
   E7_pagamento: "var(--color-pending)",
   E8_orcamento: "var(--color-info)",
+  E9_audio: "var(--color-primary)",
   unclassified: "var(--color-unclassified)",
 };

@@ -1,8 +1,9 @@
 "use client";
 
 import { progressoChecklist } from "@/lib/checklist";
+import { formatarDuracao } from "@/lib/audio";
 import { ChipTipo } from "./ChipTipo";
-import type { ChecklistPayload, DecisaoPayload, Evento } from "@/lib/types";
+import type { AudioPayload, ChecklistPayload, DecisaoPayload, Evento } from "@/lib/types";
 
 function ConteudoChecklist({ evento }: { evento: Evento }) {
   const payload = evento.payload as ChecklistPayload;
@@ -33,8 +34,47 @@ function ConteudoDecisao({ evento }: { evento: Evento }) {
   );
 }
 
+/**
+ * O áudio guarda o original E o que foi entendido (D124). O play fica porque
+ * transcrição de canteiro erra — com barulho, jargão e nome próprio — e aí o
+ * áudio é a fonte para conferir. Os registros derivados ficam listados junto,
+ * senão ela não saberia que aquele áudio virou três coisas.
+ */
+function ConteudoAudio({ evento }: { evento: Evento }) {
+  const payload = evento.payload as AudioPayload;
+  const audio = (evento.anexos ?? []).find((anexo) => anexo.tipo === "audio");
+  const derivados = payload.derivedEventIds?.length ?? 0;
+
+  return (
+    <div className="space-y-2">
+      {audio && (
+        <audio controls preload="none" src={audio.url} className="h-10 w-full max-w-xs">
+          <track kind="captions" />
+        </audio>
+      )}
+
+      {payload.transcript ? (
+        <p className="whitespace-pre-wrap text-body text-ink">{payload.transcript}</p>
+      ) : (
+        <p className="text-caption italic text-ink-soft">
+          {payload.durationSeconds
+            ? `Áudio de ${formatarDuracao(payload.durationSeconds)} — sem transcrição`
+            : "Áudio sem transcrição"}
+        </p>
+      )}
+
+      {derivados > 0 && (
+        <p className="text-micro text-ink-soft">
+          ✓ virou {derivados} {derivados === 1 ? "registro" : "registros"} aqui embaixo
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function EventBubble({ evento, onEditar }: { evento: Evento; onEditar: () => void }) {
   const prazo = (evento.payload as { date?: string }).date;
+  const vindoDeAudio = Boolean((evento.payload as { sourceAudioEventId?: string }).sourceAudioEventId);
 
   return (
     <div className="flex max-w-[85%] flex-col gap-2 rounded-bubble rounded-tl-sm bg-surface p-3 shadow-card">
@@ -45,7 +85,9 @@ export function EventBubble({ evento, onEditar }: { evento: Evento; onEditar: ()
         </button>
       </div>
 
-      {evento.kind === "E2_checklist" ? (
+      {evento.kind === "E9_audio" ? (
+        <ConteudoAudio evento={evento} />
+      ) : evento.kind === "E2_checklist" ? (
         <ConteudoChecklist evento={evento} />
       ) : evento.kind === "E3_decisao" ? (
         <ConteudoDecisao evento={evento} />
@@ -53,7 +95,7 @@ export function EventBubble({ evento, onEditar }: { evento: Evento; onEditar: ()
         evento.raw_text && <p className="whitespace-pre-wrap text-body text-ink">{evento.raw_text}</p>
       )}
 
-      {evento.anexos && evento.anexos.length > 0 && (
+      {evento.anexos && evento.anexos.length > 0 && evento.kind !== "E9_audio" && (
         <div className="flex flex-wrap gap-2">
           {evento.anexos.map((anexo) =>
             anexo.tipo === "foto" ? (
@@ -85,6 +127,7 @@ export function EventBubble({ evento, onEditar }: { evento: Evento; onEditar: ()
 
       <div className="flex items-center gap-2 text-micro text-ink-soft">
         <span>{new Date(evento.received_at).toLocaleString("pt-BR")}</span>
+        {vindoDeAudio && <span>· 🎙️ do áudio</span>}
         {prazo && (
           <span className="chip" style={{ "--chip": "var(--info)" } as React.CSSProperties}>
             📅 {new Date(`${prazo}T00:00:00`).toLocaleDateString("pt-BR")}

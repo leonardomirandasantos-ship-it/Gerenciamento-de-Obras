@@ -2,22 +2,33 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { capturarArquivos, capturarTexto, classificarTexto } from "@/lib/capturar";
+import {
+  capturarArquivos,
+  capturarAudio,
+  capturarTexto,
+  classificarTexto,
+  type ContextoDaObra,
+} from "@/lib/capturar";
+import { GravadorDeAudio } from "./GravadorDeAudio";
 import type { Pendente } from "./ConversaClient";
 
 export function ComposerInput({
   obraId,
   faseAtualId,
+  contexto,
   onPendente,
 }: {
   obraId: string;
   faseAtualId: string | null;
+  /** Nomes e ambientes já usados na obra, para o áudio reaproveitar. */
+  contexto: ContextoDaObra;
   onPendente: (pendente: Pendente) => void;
 }) {
   const router = useRouter();
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
-  const [avisoAudio, setAvisoAudio] = useState(false);
+  const [avisoAudio, setAvisoAudio] = useState<string | null>(null);
+  const [gravado, setGravado] = useState(false);
   const [falhas, setFalhas] = useState<string[]>([]);
   // Anexo fica "em espera" até ela mandar, para poder escrever o que é — é o
   // modelo do WhatsApp e não cria gate: mandar sem escrever nada continua a
@@ -49,6 +60,35 @@ export function ComposerInput({
     await capturarTexto({ obraId, texto: conteudo, faseAtualId });
 
     setEnviando(false);
+    router.refresh();
+  }
+
+  async function enviarAudio(blob: Blob, mimeType: string, segundos: number) {
+    setGravado(true);
+    setAvisoAudio(null);
+    onPendente({
+      id: crypto.randomUUID(),
+      texto: "🎙️ áudio — transcrevendo…",
+      kind: "E9_audio",
+    });
+
+    const resultado = await capturarAudio({
+      obraId,
+      blob,
+      mimeType,
+      segundos,
+      faseAtualId,
+      contexto,
+    });
+
+    setGravado(false);
+    if (resultado.aviso) setAvisoAudio(resultado.aviso);
+    else if (resultado.criados > 0) {
+      setAvisoAudio(
+        `Entendi e criei ${resultado.criados} ${resultado.criados === 1 ? "registro" : "registros"} desse áudio.`,
+      );
+    }
+    setTimeout(() => setAvisoAudio(null), 5000);
     router.refresh();
   }
 
@@ -88,7 +128,7 @@ export function ComposerInput({
 
       {avisoAudio && (
         <p className="mb-2 rounded-card bg-primary-soft px-3 py-2 text-micro text-ink-soft">
-          🎙️ Áudio ainda está em construção. Por enquanto, manda por texto ou foto.
+          {avisoAudio}
         </p>
       )}
 
@@ -152,18 +192,14 @@ export function ComposerInput({
           className="max-h-32 min-h-11 flex-1 resize-none rounded-bubble border border-line bg-surface-alt px-4 py-3 text-base leading-tight text-ink outline-none focus:border-primary"
         />
 
-        {/* Microfone: só desenho por enquanto (D56 ainda não implementado). */}
-        <button
-          type="button"
-          onClick={() => {
-            setAvisoAudio(true);
-            setTimeout(() => setAvisoAudio(false), 3500);
+        <GravadorDeAudio
+          onPronto={enviarAudio}
+          onErro={(mensagem) => {
+            setAvisoAudio(mensagem);
+            setTimeout(() => setAvisoAudio(null), 5000);
           }}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl text-ink-soft active:bg-surface-alt"
-          aria-label="Gravar áudio (em construção)"
-        >
-          🎙️
-        </button>
+          desabilitado={gravado || enviando}
+        />
 
         <button
           type="button"

@@ -40,6 +40,12 @@ export async function proxy(request: NextRequest) {
   );
 
   if (!autenticado && !isPublicPath) {
+    // Rota de API responde 401 em JSON em vez de redirecionar: o fetch do
+    // front seguiria o 307, receberia HTML do /login e quebraria no .json().
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      return NextResponse.json({ erro: "não autenticado" }, { status: 401 });
+    }
+
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

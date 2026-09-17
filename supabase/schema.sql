@@ -66,9 +66,12 @@ create table favorecidos (
 create table eventos (
   id uuid primary key default gen_random_uuid(),
   obra_id uuid not null references obras(id) on delete cascade,
+  -- E9_audio: o áudio guarda o original e a transcrição; os eventos que
+  -- saíram dele apontam de volta por payload.sourceAudioEventId (migração 002).
   kind text not null default 'unclassified' check (kind in (
     'E1_lista', 'E2_checklist', 'E3_decisao', 'E4_documentacao',
     'E5_documento', 'E6_comunicacao', 'E7_pagamento', 'E8_orcamento',
+    'E9_audio',
     'unclassified'
   )),
   confidence numeric(3, 2) not null default 0,

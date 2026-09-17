@@ -7,6 +7,11 @@ import type { ChecklistPayload, Evento } from "./types";
  */
 export function descricaoDoEvento(evento: Evento): string {
   if (evento.raw_text?.trim()) return evento.raw_text;
+
+  if (evento.kind === "E9_audio") {
+    const segundos = (evento.payload as { durationSeconds?: number }).durationSeconds;
+    return segundos ? `Áudio de ${segundos}s` : "Áudio";
+  }
   if (evento.caption?.trim()) return evento.caption;
 
   const titulo = (evento.payload as ChecklistPayload).title;

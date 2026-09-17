@@ -8,6 +8,7 @@ import { EditBottomSheet } from "./EditBottomSheet";
 import { SuggestionCard } from "./SuggestionCard";
 import { ChipTipo } from "./ChipTipo";
 import { SeletorFaseAtual } from "./SeletorFaseAtual";
+import type { ContextoDaObra } from "@/lib/capturar";
 import type { Sugestao } from "@/lib/suggestions";
 import type { Evento, EventoKind, Fase } from "@/lib/types";
 
@@ -19,12 +20,14 @@ export function ConversaClient({
   fases,
   sugestoes,
   faseAtualId,
+  contexto,
 }: {
   obraId: string;
   eventos: Evento[];
   fases: Fase[];
   sugestoes: Sugestao[];
   faseAtualId: string | null;
+  contexto: ContextoDaObra;
 }) {
   const [editando, setEditando] = useState<Evento | null>(null);
   const [pendentes, setPendentes] = useState<Pendente[]>([]);
@@ -138,6 +141,7 @@ export function ConversaClient({
       <ComposerInput
         obraId={obraId}
         faseAtualId={faseAtualId}
+        contexto={contexto}
         onPendente={(pendente) => setPendentes((atuais) => [...atuais, pendente])}
       />
 

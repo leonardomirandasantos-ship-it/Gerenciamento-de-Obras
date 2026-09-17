@@ -155,6 +155,10 @@ export function EditBottomSheet({
           </div>
         )}
 
+        {/* Áudio não vira outro tipo: ele é o registro original, e o que foi
+            entendido dele já são os registros derivados. */}
+        {evento.kind !== "E9_audio" && (
+          <>
         <p className="mb-2 text-sm font-medium text-ink">Tipo</p>
         <div className="mb-4 flex flex-wrap gap-2">
           {TIPOS_SELECIONAVEIS.map((t) => (
@@ -172,6 +176,8 @@ export function EditBottomSheet({
             </button>
           ))}
         </div>
+          </>
+        )}
 
         {kind === "E3_decisao" && (
           <div className="mb-4 space-y-2">
