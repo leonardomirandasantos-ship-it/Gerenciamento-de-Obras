@@ -32,12 +32,24 @@ function VisorFoto({
   const [faseId, setFaseId] = useState(foto.evento.phase_id ?? "");
   const [salvando, setSalvando] = useState(false);
 
-  async function salvar() {
+  // Fase salva no toque: era um <select> embaixo da legenda e o usuário
+  // acabava escrevendo o nome da fase na legenda por engano.
+  async function salvarFase(novaFase: string) {
+    setFaseId(novaFase);
+    const supabase = createClient();
+    await supabase
+      .from("eventos")
+      .update({ phase_id: novaFase, edited: true })
+      .eq("id", foto.evento.id);
+    router.refresh();
+  }
+
+  async function salvarLegenda() {
     setSalvando(true);
     const supabase = createClient();
     await supabase
       .from("eventos")
-      .update({ caption: legenda || null, phase_id: faseId || null, edited: true })
+      .update({ caption: legenda || null, edited: true })
       .eq("id", foto.evento.id);
     setSalvando(false);
     router.refresh();
@@ -74,7 +86,11 @@ function VisorFoto({
           </button>
         )}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={foto.url} alt={legenda} className="max-h-full max-w-full object-contain" />
+        <img
+          src={foto.url}
+          alt={legenda}
+          className="max-h-full max-w-full object-contain"
+        />
         {indice < fotos.length - 1 && (
           <button
             type="button"
@@ -89,39 +105,46 @@ function VisorFoto({
 
       <div className="space-y-3 bg-surface p-4">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-ink-soft">Legenda (opcional)</label>
-          <input
-            value={legenda}
-            onChange={(e) => setLegenda(e.target.value)}
-            placeholder="Ex.: hidráulica da cozinha antes de fechar a parede"
-            className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
-          />
+          <label className="text-xs font-medium text-ink-soft">Fase</label>
+          <div className="flex flex-wrap gap-2">
+            {fases.map((fase) => (
+              <button
+                key={fase.id}
+                type="button"
+                onClick={() => salvarFase(fase.id)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
+                  fase.id === faseId
+                    ? "border-primary bg-primary text-white"
+                    : "border-line text-ink-soft"
+                }`}
+              >
+                {fase.name}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-ink-soft">Fase</label>
-          <select
-            value={faseId}
-            onChange={(e) => setFaseId(e.target.value)}
-            className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink"
-          >
-            <option value="">Sem fase</option>
-            {fases.map((fase) => (
-              <option key={fase.id} value={fase.id}>
-                {fase.name}
-              </option>
-            ))}
-          </select>
+          <label className="text-xs font-medium text-ink-soft">
+            Legenda (opcional)
+          </label>
+          <div className="flex gap-2">
+            <input
+              value={legenda}
+              onChange={(e) => setLegenda(e.target.value)}
+              placeholder="Ex.: hidráulica da cozinha antes de fechar a parede"
+              className="min-w-0 flex-1 rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
+            />
+            <button
+              type="button"
+              onClick={salvarLegenda}
+              disabled={salvando}
+              className="shrink-0 rounded-card bg-primary px-4 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {salvando ? "..." : "Salvar"}
+            </button>
+          </div>
         </div>
-
-        <button
-          type="button"
-          onClick={salvar}
-          disabled={salvando}
-          className="w-full rounded-card bg-primary px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
-        >
-          {salvando ? "Salvando..." : "Salvar"}
-        </button>
 
         {fotos.length > 1 && (
           <div className="flex gap-2 overflow-x-auto pt-1">
@@ -216,7 +239,11 @@ export function GaleriaDocumentacao({
             className="relative aspect-square overflow-hidden rounded-card bg-surface-alt"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={foto.url} alt={foto.evento.caption ?? ""} className="h-full w-full object-cover" />
+            <img
+              src={foto.url}
+              alt={foto.evento.caption ?? ""}
+              className="h-full w-full object-cover"
+            />
             {foto.evento.caption && (
               <span className="absolute inset-x-0 bottom-0 truncate bg-black/50 px-1 py-0.5 text-left text-[10px] text-white">
                 {foto.evento.caption}

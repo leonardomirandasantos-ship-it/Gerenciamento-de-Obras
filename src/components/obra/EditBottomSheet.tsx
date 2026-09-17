@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { RÓTULO_TIPO, type Evento, type EventoKind, type Fase } from "@/lib/types";
+import { BottomSheet } from "./BottomSheet";
+import {
+  RÓTULO_TIPO,
+  type Evento,
+  type EventoKind,
+  type Fase,
+} from "@/lib/types";
 
 const TIPOS_SELECIONAVEIS: EventoKind[] = [
   "E1_lista",
@@ -26,7 +32,10 @@ export function EditBottomSheet({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const pagamentoAtual = evento.payload as { amount?: number; payeeName?: string };
+  const pagamentoAtual = evento.payload as {
+    amount?: number;
+    payeeName?: string;
+  };
   const [kind, setKind] = useState<EventoKind>(evento.kind);
   const [phaseId, setPhaseId] = useState(evento.phase_id ?? "");
   const [valor, setValor] = useState(pagamentoAtual.amount?.toString() ?? "");
@@ -48,7 +57,13 @@ export function EditBottomSheet({
 
     await supabase
       .from("eventos")
-      .update({ kind, confidence: 1, phase_id: phaseId || null, payload, edited: true })
+      .update({
+        kind,
+        confidence: 1,
+        phase_id: phaseId || null,
+        payload,
+        edited: true,
+      })
       .eq("id", evento.id);
     setCarregando(false);
     onClose();
@@ -58,21 +73,18 @@ export function EditBottomSheet({
   async function excluir() {
     setCarregando(true);
     const supabase = createClient();
-    await supabase.from("eventos").update({ deleted: true }).eq("id", evento.id);
+    await supabase
+      .from("eventos")
+      .update({ deleted: true })
+      .eq("id", evento.id);
     setCarregando(false);
     onClose();
     router.refresh();
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/30" onClick={onClose}>
-      <div
-        className="safe-bottom max-h-[85dvh] w-full overflow-y-auto rounded-t-sheet bg-surface p-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-line" />
-        <h2 className="mb-4 font-display text-base font-bold text-ink">Editar registro</h2>
-
+    <BottomSheet titulo="Editar registro" onFechar={onClose}>
+      <>
         {evento.raw_text && (
           <p className="mb-4 rounded-card bg-surface-alt p-3 text-sm text-ink-soft">
             {evento.raw_text}
@@ -87,7 +99,9 @@ export function EditBottomSheet({
               type="button"
               onClick={() => setKind(t)}
               className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
-                kind === t ? "border-primary bg-primary-soft text-primary" : "border-line text-ink-soft"
+                kind === t
+                  ? "border-primary bg-primary-soft text-primary"
+                  : "border-line text-ink-soft"
               }`}
             >
               {RÓTULO_TIPO[t]}
@@ -98,7 +112,9 @@ export function EditBottomSheet({
         {kind === "E7_pagamento" && (
           <div className="mb-4 flex gap-2">
             <div className="w-28 space-y-1">
-              <label className="text-xs font-medium text-ink-soft">Valor (R$)</label>
+              <label className="text-xs font-medium text-ink-soft">
+                Valor (R$)
+              </label>
               <input
                 inputMode="decimal"
                 value={valor}
@@ -107,7 +123,9 @@ export function EditBottomSheet({
               />
             </div>
             <div className="flex-1 space-y-1">
-              <label className="text-xs font-medium text-ink-soft">Favorecido</label>
+              <label className="text-xs font-medium text-ink-soft">
+                Favorecido
+              </label>
               <input
                 value={favorecido}
                 onChange={(e) => setFavorecido(e.target.value)}
@@ -143,11 +161,11 @@ export function EditBottomSheet({
         <button
           onClick={excluir}
           disabled={carregando}
-          className="w-full text-center text-sm font-medium text-alert"
+          className="w-full py-2 text-center text-sm font-medium text-alert"
         >
           🗑 Excluir registro
         </button>
-      </div>
-    </div>
+      </>
+    </BottomSheet>
   );
 }

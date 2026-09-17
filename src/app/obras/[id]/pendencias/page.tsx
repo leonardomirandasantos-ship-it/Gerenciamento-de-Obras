@@ -29,11 +29,14 @@ export default async function PendenciasPage({
 
   // Listas que ainda não viraram checklist continuam visíveis aqui — nada que
   // ela mandou pode "desaparecer" por não ter aceitado uma sugestão (D3).
-  const listasSoltas = eventos.filter(
-    (evento) =>
-      evento.kind === "E1_lista" &&
-      !(evento.payload as ListaPayload).linkedChecklistId,
-  );
+  // O checklist vinculado também precisa existir de fato: se foi excluído, a
+  // lista volta para cá em vez de sumir das duas seções.
+  const idsDeChecklists = new Set(checklists.map((checklist) => checklist.id));
+  const listasSoltas = eventos.filter((evento) => {
+    if (evento.kind !== "E1_lista") return false;
+    const vinculo = (evento.payload as ListaPayload).linkedChecklistId;
+    return !vinculo || !idsDeChecklists.has(vinculo);
+  });
 
   const comPrazo = eventos
     .filter((evento) => {

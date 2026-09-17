@@ -19,6 +19,29 @@ export function ChecklistCard({ evento }: { evento: Evento }) {
       .from("eventos")
       .update({ deleted: true })
       .eq("id", evento.id);
+
+    // A lista de origem volta a ficar disponível — senão ela some da aba
+    // (continua apontando para um checklist que não existe mais).
+    if (payload.sourceEventId) {
+      const { data: origem } = await supabase
+        .from("eventos")
+        .select("payload")
+        .eq("id", payload.sourceEventId)
+        .single();
+
+      if (origem) {
+        const payloadOrigem = { ...(origem.payload ?? {}) } as Record<
+          string,
+          unknown
+        >;
+        delete payloadOrigem.linkedChecklistId;
+        await supabase
+          .from("eventos")
+          .update({ payload: payloadOrigem })
+          .eq("id", payload.sourceEventId);
+      }
+    }
+
     router.refresh();
   }
 

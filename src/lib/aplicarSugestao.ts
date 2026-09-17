@@ -3,7 +3,11 @@ import { fundirStatus, itensParaChecklist } from "./checklist";
 import type { Sugestao } from "./suggestions";
 import type { ChecklistPayload, Evento, ListaPayload } from "./types";
 
-async function registrar(sugestao: Sugestao, obraId: string, estado: "accepted" | "ignored") {
+async function registrar(
+  sugestao: Sugestao,
+  obraId: string,
+  estado: "accepted" | "ignored",
+) {
   const supabase = createClient();
   await supabase.from("sugestoes").insert({
     obra_id: obraId,
@@ -23,14 +27,22 @@ export async function ignorarSugestao(sugestao: Sugestao, obraId: string) {
  * Cria o checklist a partir de uma lista. Usado tanto pela sugestão (caso A)
  * quanto pelo botão direto no card da lista, na aba de pendências.
  */
-export async function criarChecklistDeLista(evento: Evento, obraId: string) {
+export async function criarChecklistDeLista(
+  evento: Evento,
+  obraId: string,
+  marcarItem?: number,
+) {
   const supabase = createClient();
   const rawText = evento.raw_text ?? "";
-  const itens = itensParaChecklist(rawText);
+  const itens = itensParaChecklist(rawText).map((item, indice) =>
+    indice === marcarItem ? { ...item, status: "ok" as const } : item,
+  );
 
   const payload: ChecklistPayload = {
     title: `Lista de ${new Date(evento.received_at).toLocaleDateString("pt-BR")}`,
     sourceListDate: evento.received_at,
+    // Guardado para religar a lista se o checklist for excluído depois.
+    sourceEventId: evento.id,
     items: itens,
     statusHistory: [],
   };
@@ -52,7 +64,10 @@ export async function criarChecklistDeLista(evento: Evento, obraId: string) {
       ...(evento.payload as ListaPayload),
       linkedChecklistId: checklist.id,
     };
-    await supabase.from("eventos").update({ payload: payloadLista }).eq("id", evento.id);
+    await supabase
+      .from("eventos")
+      .update({ payload: payloadLista })
+      .eq("id", evento.id);
   }
 }
 
@@ -92,7 +107,10 @@ export async function aplicarSugestao(
 
     const { data: favorecido } = await supabase
       .from("favorecidos")
-      .upsert({ obra_id: obraId, name: nome, type: tipo }, { onConflict: "obra_id,name" })
+      .upsert(
+        { obra_id: obraId, name: nome, type: tipo },
+        { onConflict: "obra_id,name" },
+      )
       .select("id")
       .single();
 
@@ -121,14 +139,21 @@ export async function aplicarSugestao(
 
     if (checklist) {
       const atual = (checklist.payload ?? {}) as ChecklistPayload;
-      const { itens, alterados } = fundirStatus(atual.items ?? [], itensParaChecklist(rawText));
+      const { itens, alterados } = fundirStatus(
+        atual.items ?? [],
+        itensParaChecklist(rawText),
+      );
 
       const payload: ChecklistPayload = {
         ...atual,
         items: itens,
         statusHistory: [
           ...(atual.statusHistory ?? []),
-          { at: new Date().toISOString(), fromEventId: evento.id, changed: alterados },
+          {
+            at: new Date().toISOString(),
+            fromEventId: evento.id,
+            changed: alterados,
+          },
         ],
       };
 
@@ -138,7 +163,10 @@ export async function aplicarSugestao(
         ...(evento.payload as ListaPayload),
         linkedChecklistId: checklistId,
       };
-      await supabase.from("eventos").update({ payload: payloadLista }).eq("id", evento.id);
+      await supabase
+        .from("eventos")
+        .update({ payload: payloadLista })
+        .eq("id", evento.id);
     }
   }
 

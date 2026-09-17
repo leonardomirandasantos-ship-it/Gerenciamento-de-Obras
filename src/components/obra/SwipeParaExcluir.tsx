@@ -2,12 +2,21 @@
 
 import { useRef, useState } from "react";
 
-const LIMITE_EXCLUSAO = 96;
+const LARGURA_ABERTO = 104;
+const LIMITE_ABRIR = 40;
+const LIMITE_JOGAR_FORA = 180;
+const FOLGA_ATE_VIRAR_ARRASTO = 8;
 
 /**
- * Arrasta para o lado e exclui, como nas conversas do WhatsApp (mobile-first,
- * D58). Usa Pointer Events, então o mesmo código atende toque e mouse — o que
- * também deixa o gesto testável fora do celular.
+ * Excluir arrastando, em duas etapas de propósito (mobile-first, D58):
+ *
+ * 1. arrasta um pouco e solta → o card trava aberto mostrando "Excluir",
+ *    então é preciso confirmar no botão;
+ * 2. arrasta até o fim ("joga fora") → exclui direto.
+ *
+ * Sem isso um arrasto acidental apagava registro, que é o pior erro possível
+ * aqui. O ponteiro só é capturado depois que o gesto vira arrasto horizontal
+ * de verdade — capturar no toque impedia clicar nos itens dentro do card.
  */
 export function SwipeParaExcluir({
   children,
@@ -18,10 +27,11 @@ export function SwipeParaExcluir({
   onExcluir: () => void | Promise<void>;
   rotulo?: string;
 }) {
+  const [aberto, setAberto] = useState(false);
   const [deslocamento, setDeslocamento] = useState(0);
   const [arrastando, setArrastando] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
-  const inicioX = useRef<number | null>(null);
+  const inicio = useRef<{ x: number; y: number } | null>(null);
 
   async function excluir() {
     setExcluindo(true);
@@ -30,42 +40,69 @@ export function SwipeParaExcluir({
   }
 
   function encerrar() {
-    if (Math.abs(deslocamento) >= LIMITE_EXCLUSAO) {
-      excluir();
-    }
-    setDeslocamento(0);
+    const total = deslocamento;
+    const eraArrasto = arrastando;
+
     setArrastando(false);
-    inicioX.current = null;
+    setDeslocamento(0);
+    inicio.current = null;
+
+    if (!eraArrasto) return;
+
+    if (total <= -LIMITE_JOGAR_FORA) {
+      excluir();
+      return;
+    }
+    if (total <= -LIMITE_ABRIR) {
+      setAberto(true);
+      return;
+    }
+    if (total >= LIMITE_ABRIR) {
+      setAberto(false);
+    }
   }
 
-  const progresso = Math.min(Math.abs(deslocamento) / LIMITE_EXCLUSAO, 1);
+  const base = aberto ? -LARGURA_ABERTO : 0;
+  const posicao = arrastando ? Math.min(0, base + deslocamento) : base;
+  const progresso = Math.min(Math.abs(posicao) / LARGURA_ABERTO, 1);
 
   return (
     <div className="relative overflow-hidden rounded-card">
-      <div
-        className="absolute inset-y-0 right-0 flex items-center justify-end px-4 text-sm font-semibold text-white"
+      <button
+        type="button"
+        onClick={excluir}
+        disabled={excluindo || !aberto}
+        aria-label={rotulo}
+        className="absolute inset-y-0 right-0 flex w-[104px] items-center justify-center text-sm font-semibold text-white"
         style={{ backgroundColor: "var(--color-alert)", opacity: progresso }}
       >
         🗑 {rotulo}
-      </div>
+      </button>
 
       <div
         className={`relative touch-pan-y ${arrastando ? "select-none" : ""}`}
         style={{
-          transform: `translateX(${deslocamento}px)`,
-          transition: arrastando ? undefined : "transform 150ms ease-out",
+          transform: `translateX(${posicao}px)`,
+          transition: arrastando ? undefined : "transform 180ms ease-out",
           opacity: excluindo ? 0.5 : 1,
         }}
         onPointerDown={(e) => {
-          inicioX.current = e.clientX;
-          setArrastando(true);
-          e.currentTarget.setPointerCapture(e.pointerId);
+          inicio.current = { x: e.clientX, y: e.clientY };
         }}
         onPointerMove={(e) => {
-          if (inicioX.current === null) return;
-          const delta = e.clientX - inicioX.current;
-          // só arrasta para a esquerda
-          setDeslocamento(Math.min(0, delta));
+          if (!inicio.current) return;
+          const dx = e.clientX - inicio.current.x;
+          const dy = e.clientY - inicio.current.y;
+
+          if (!arrastando) {
+            // Só vira arrasto quando o movimento é claramente horizontal —
+            // senão atrapalharia o scroll e os toques nos itens.
+            if (Math.abs(dx) < FOLGA_ATE_VIRAR_ARRASTO || Math.abs(dx) <= Math.abs(dy)) return;
+            setArrastando(true);
+            e.currentTarget.setPointerCapture(e.pointerId);
+          }
+
+          setDeslocamento(dx);
         }}
         onPointerUp={encerrar}
         onPointerCancel={encerrar}

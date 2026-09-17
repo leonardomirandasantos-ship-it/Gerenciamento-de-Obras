@@ -21,6 +21,7 @@ export type ChecklistItem = {
 export type ChecklistPayload = {
   title?: string;
   sourceListDate?: string;
+  sourceEventId?: string;
   items: ChecklistItem[];
   statusHistory?: { at: string; fromEventId?: string; changed: number }[];
 };
