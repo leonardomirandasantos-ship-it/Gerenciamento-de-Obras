@@ -13,8 +13,14 @@ export type ResultadoClassificacao = {
   confidence: number;
 };
 
+/**
+ * O que separa pagamento de lista aqui é o TEMPO DO VERBO: "comprei/compramos"
+ * é dinheiro que já saiu; "comprar" (infinitivo) é item de lista e continua
+ * caindo em E1. Sem isso, "comprei 200 de tijolo na construção Bom Lar" virava
+ * material e nunca chegava no dash.
+ */
 const REGEX_PAGAMENTO =
-  /\bpix\b|comprovante|\bpago\b|\bpaguei\b|\bpagamos\b|\bpagamento\b|\badiantei\b|\badiantamento\b|\btransferi\b|\bdepositei\b/i;
+  /\bpix\b|comprovante|\bpago\b|\bpaguei\b|\bpagamos\b|\bpagamento\b|\badiantei\b|\badiantamento\b|\btransferi\b|\bdepositei\b|\bcomprei\b|\bcompramos\b|\bgastei\b|\bgastamos\b|\bquitei\b|\bacertei\b/i;
 
 const REGEX_ORCAMENTO = /or[çc]amento|cota[çc][ãa]o|\bproposta\b/i;
 

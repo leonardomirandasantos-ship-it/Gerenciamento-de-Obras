@@ -9,11 +9,16 @@ type ServerClient = Awaited<ReturnType<typeof createClient>>;
  *
  * As URLs são assinadas em UMA chamada para todos os anexos: uma chamada por
  * anexo deixava a obra visivelmente lenta quando havia muitas fotos.
+ *
+ * `assinar: false` pula a assinatura inteira — a aba de pendências, por
+ * exemplo, não mostra nenhuma imagem, e estava pagando essa ida ao Storage
+ * em toda troca de aba à toa.
  */
 export async function carregarEventosComAnexos(
   supabase: ServerClient,
   obraId: string,
   kinds?: EventoKind[],
+  opcoes: { assinar?: boolean } = {},
 ): Promise<Evento[]> {
   let query = supabase
     .from("eventos")
@@ -32,7 +37,7 @@ export async function carregarEventosComAnexos(
     (evento.anexos ?? []).map((anexo) => anexo.url),
   );
 
-  if (caminhos.length === 0) {
+  if (opcoes.assinar === false || caminhos.length === 0) {
     return eventos.map((evento) => ({ ...evento, anexos: evento.anexos ?? [] }));
   }
 

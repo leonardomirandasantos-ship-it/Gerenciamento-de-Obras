@@ -15,7 +15,7 @@ export default async function ResumoPage({
   const supabase = await createClient();
 
   const [eventos, { data: registros }, { data: fases }] = await Promise.all([
-    carregarEventosComAnexos(supabase, id),
+    carregarEventosComAnexos(supabase, id, undefined, { assinar: false }),
     supabase.from("sugestoes").select("*").eq("obra_id", id),
     supabase
       .from("fases")

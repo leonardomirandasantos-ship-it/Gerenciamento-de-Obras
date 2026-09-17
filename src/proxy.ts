@@ -27,15 +27,19 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() em vez de getUser(): valida a assinatura do JWT localmente
+  // (JWKS em cache) em vez de perguntar ao servidor de Auth a cada navegação.
+  // Medido nesta obra: getUser custava 145–420ms POR request — era a maior
+  // fatia do "demora pra trocar de aba"; getClaims responde em 1–6ms.
+  // A garantia de acesso ao dado continua sendo a RLS, não este gate.
+  const { data: claims } = await supabase.auth.getClaims();
+  const autenticado = Boolean(claims?.claims?.sub);
 
   const isPublicPath = PUBLIC_PATHS.some((path) =>
     request.nextUrl.pathname.startsWith(path),
   );
 
-  if (!user && !isPublicPath) {
+  if (!autenticado && !isPublicPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

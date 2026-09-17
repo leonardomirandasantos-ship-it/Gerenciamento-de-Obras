@@ -2,18 +2,11 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEventosComAnexos } from "@/lib/carregarEventos";
 import { detectarSugestoes, ordenarPorPrioridade } from "@/lib/suggestions";
+import { listasAbertas } from "@/lib/pendencias";
 import { CardDeLista } from "@/components/obra/CardDeLista";
 import { PrazosLista } from "@/components/obra/PrazosLista";
 import { SuggestionCard } from "@/components/obra/SuggestionCard";
-import type { ChecklistPayload, Evento, ListaPayload, SugestaoRegistro } from "@/lib/types";
-
-/** Data que ordena o card: o checklist herda a data da lista que o originou. */
-function dataDaLista(evento: Evento): string {
-  if (evento.kind === "E2_checklist") {
-    return (evento.payload as ChecklistPayload).sourceListDate ?? evento.received_at;
-  }
-  return evento.received_at;
-}
+import type { ChecklistPayload, SugestaoRegistro } from "@/lib/types";
 
 export default async function PendenciasPage({
   params,
@@ -24,26 +17,13 @@ export default async function PendenciasPage({
   const supabase = await createClient();
 
   const [eventos, { data: registros }] = await Promise.all([
-    carregarEventosComAnexos(supabase, id),
+    carregarEventosComAnexos(supabase, id, undefined, { assinar: false }),
     supabase.from("sugestoes").select("*").eq("obra_id", id),
   ]);
 
+  // Listas e checklists moram na MESMA seção: para quem usa é a mesma coisa (D76).
+  const listas = listasAbertas(eventos);
   const checklists = eventos.filter((evento) => evento.kind === "E2_checklist");
-  const idsDeChecklists = new Set(checklists.map((checklist) => checklist.id));
-
-  // Listas e checklists moram na MESMA seção: para quem usa é a mesma coisa,
-  // e separá-los fazia o card "sumir" ao ser convertido (ia para o fim da
-  // página). Uma lista só sai daqui quando é tirada explicitamente.
-  const listasSoltas = eventos.filter((evento) => {
-    if (evento.kind !== "E1_lista") return false;
-    const payload = evento.payload as ListaPayload;
-    if (payload.dismissed) return false;
-    return !payload.linkedChecklistId || !idsDeChecklists.has(payload.linkedChecklistId);
-  });
-
-  const listas = [...checklists, ...listasSoltas].sort((a, b) =>
-    dataDaLista(b).localeCompare(dataDaLista(a)),
-  );
 
   const comPrazo = eventos
     .filter((evento) => {
@@ -64,9 +44,7 @@ export default async function PendenciasPage({
 
   // Limito a 3: com dados reais a engine detecta 10+ e vira ruído (D25).
   const sugestoes = ordenarPorPrioridade(
-    detectarSugestoes(eventos, (registros ?? []) as SugestaoRegistro[]).filter(
-      (sugestao) => sugestao.caso !== "A_checklist",
-    ),
+    detectarSugestoes(eventos, (registros ?? []) as SugestaoRegistro[]),
   ).slice(0, 3);
   const porEvento = new Map(eventos.map((evento) => [evento.id, evento]));
 

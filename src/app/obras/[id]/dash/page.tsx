@@ -2,9 +2,10 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { carregarEventosComAnexos } from "@/lib/carregarEventos";
 import { agruparPorFavorecido, formatarReais, totalPago, type Favorecido } from "@/lib/pagamento";
+import { itensAComprar } from "@/lib/pendencias";
 import { RoscaPorFase, type FatiaFase } from "@/components/obra/RoscaPorFase";
 import { PagamentosEditaveis } from "@/components/obra/PagamentosEditaveis";
-import type { ChecklistPayload, Fase } from "@/lib/types";
+import type { Fase } from "@/lib/types";
 
 export default async function DashPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -33,10 +34,7 @@ export default async function DashPage({ params }: { params: Promise<{ id: strin
     },
   ];
 
-  const aComprar = eventos
-    .filter((evento) => evento.kind === "E2_checklist")
-    .flatMap((evento) => (evento.payload as ChecklistPayload).items ?? [])
-    .filter((item) => item.status === "falta").length;
+  const aComprar = itensAComprar(eventos);
 
   const orcamentos = eventos.filter((evento) => evento.kind === "E8_orcamento").length;
 
@@ -57,39 +55,63 @@ export default async function DashPage({ params }: { params: Promise<{ id: strin
         <RoscaPorFase fatias={fatias} />
       </section>
 
-      <section className="space-y-3 rounded-card bg-surface shadow-card p-4">
-        <h2 className="text-sm font-semibold text-ink">Gasto por prestador/fornecedor</h2>
+      <section className="space-y-3 rounded-card bg-surface p-4 shadow-card">
+        <div>
+          <h2 className="font-display text-section font-bold text-ink">
+            Gasto por prestador/fornecedor
+          </h2>
+          {porPessoa.length > 0 && (
+            <p className="text-micro text-ink-soft">
+              Toque no nome para ver o histórico de pagamentos da pessoa
+            </p>
+          )}
+        </div>
 
         {porPessoa.length === 0 ? (
-          <p className="text-xs text-ink-soft">
+          <p className="text-caption text-ink-soft">
             Quando você registrar um pagamento, ele aparece agrupado aqui — sem precisar cadastrar
             ninguém.
           </p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="divide-y divide-line">
             {porPessoa.map((pessoa) => (
               <li key={pessoa.nome}>
+                {/* Linha inteira clicável com inicial e chevron: antes parecia
+                    só um gráfico, e ninguém descobria que abria o histórico. */}
                 <Link
                   href={`/obras/${id}/prestador/${encodeURIComponent(pessoa.nome)}`}
-                  className="block space-y-1"
+                  className="flex items-center gap-3 py-3 active:bg-surface-alt"
                 >
-                  <div className="flex items-baseline justify-between gap-2 text-sm">
-                    <span className="min-w-0 truncate text-ink">
-                      {pessoa.nome}
-                      {pessoa.tipo && (
-                        <span className="ml-1 text-[11px] text-ink-soft">· {pessoa.tipo}</span>
-                      )}
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft font-display font-bold text-primary">
+                    {pessoa.nome.charAt(0).toUpperCase()}
+                  </span>
+
+                  <span className="min-w-0 flex-1 space-y-1">
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="min-w-0 truncate font-display text-body font-bold text-ink">
+                        {pessoa.nome}
+                      </span>
+                      <span className="shrink-0 font-display text-body font-bold text-ink">
+                        {formatarReais(pessoa.total)}
+                      </span>
                     </span>
-                    <span className="shrink-0 font-medium text-ink">
-                      {formatarReais(pessoa.total)}
+                    <span className="block h-1.5 overflow-hidden rounded-full bg-surface-alt">
+                      <span
+                        className="block h-full rounded-full bg-primary"
+                        style={{
+                          width: maiorGasto > 0 ? `${(pessoa.total / maiorGasto) * 100}%` : "0%",
+                        }}
+                      />
                     </span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-surface-alt">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: maiorGasto > 0 ? `${(pessoa.total / maiorGasto) * 100}%` : "0%" }}
-                    />
-                  </div>
+                    <span className="block text-micro text-ink-soft">
+                      {pessoa.pagamentos} {pessoa.pagamentos === 1 ? "pagamento" : "pagamentos"}
+                      {pessoa.tipo ? ` · ${pessoa.tipo}` : ""}
+                    </span>
+                  </span>
+
+                  <span aria-hidden className="shrink-0 text-lg text-ink-soft">
+                    ›
+                  </span>
                 </Link>
               </li>
             ))}

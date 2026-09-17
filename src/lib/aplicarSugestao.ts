@@ -24,8 +24,9 @@ export async function ignorarSugestao(sugestao: Sugestao, obraId: string) {
 }
 
 /**
- * Cria o checklist a partir de uma lista. Usado tanto pela sugestão (caso A)
- * quanto pelo botão direto no card da lista, na aba de pendências.
+ * Cria o checklist a partir de uma lista. Hoje só o card de pendências chama —
+ * a sugestão "transformar em checklist" saiu de cena quando a lista passou a
+ * ser marcável item a item (D74/D76).
  */
 export async function criarChecklistDeLista(
   evento: Evento,
@@ -123,10 +124,6 @@ export async function aplicarSugestao(
         payload: { ...evento.payload, payeeType: tipo },
       })
       .eq("id", evento.id);
-  }
-
-  if (sugestao.caso === "A_checklist") {
-    await criarChecklistDeLista(evento, obraId);
   }
 
   if (sugestao.caso === "B_status") {

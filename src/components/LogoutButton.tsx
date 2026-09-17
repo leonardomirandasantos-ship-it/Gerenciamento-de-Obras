@@ -14,9 +14,11 @@ export function LogoutButton() {
   }
 
   return (
+    // Fica sobre o header --primary: cor de texto clara, senão o contraste
+    // some (o --ink-soft era pensado para fundo claro).
     <button
       onClick={sair}
-      className="text-sm text-ink-soft underline"
+      className="rounded-full px-3 py-1.5 font-display text-caption font-semibold text-bg-paper active:bg-white/15"
     >
       Sair
     </button>

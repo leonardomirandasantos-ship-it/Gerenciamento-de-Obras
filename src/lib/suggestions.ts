@@ -44,8 +44,9 @@ export function extrairTituloEValor(texto: string): { title: string; value: stri
 
 /**
  * Quando há muitas sugestões, o que aparece primeiro importa. Fusão de status
- * e prazo vêm na frente porque fecham loop que a vida real deixou aberto;
- * "virar checklist" vai por último porque o card da lista já oferece isso.
+ * e prazo vêm na frente porque fecham loop que a vida real deixou aberto.
+ * A_checklist não é mais emitida (ver detectarSugestoes), mas o caso continua
+ * no mapa porque existem registros antigos no banco.
  */
 const PRIORIDADE: Record<CasoSugestao, number> = {
   B_status: 0,
@@ -108,6 +109,10 @@ export function detectarSugestoes(
           .filter((par) => pareceMesmaLista(par.similaridade))
           .sort((a, b) => b.similaridade.proporcao - a.similaridade.proporcao)[0];
 
+        // Não existe mais sugestão "transformar em checklist" (era A_checklist):
+        // desde o D74/D76 a lista JÁ é marcável item a item na aba de
+        // pendências, e a conversão acontece no primeiro toque. Perguntar de
+        // novo fazia o app pedir permissão para algo que já estava feito.
         let ofereceu = false;
 
         if (checklistParecido && !casoSilenciado("B_status", registros) && !jaResolvida("B_status", evento.id, registros)) {
@@ -121,21 +126,6 @@ export function detectarSugestoes(
             porque: `${checklistParecido.similaridade.casados} itens batem com esse checklist.`,
             acaoLabel: "Atualizar status",
             dados: { checklistId: checklistParecido.checklist.id, rawText: texto },
-          });
-        } else if (
-          itens.length >= 2 &&
-          !casoSilenciado("A_checklist", registros) &&
-          !jaResolvida("A_checklist", evento.id, registros)
-        ) {
-          ofereceu = true;
-          sugestoes.push({
-            caso: "A_checklist",
-            eventoId: evento.id,
-            gatilho: `Lista com ${itens.length} itens`,
-            proposta: "Transformar essa lista em checklist?",
-            porque: "Dá pra ir marcando o que já resolveu sem digitar de novo.",
-            acaoLabel: "Criar checklist",
-            dados: { itens, rawText: texto },
           });
         }
 
