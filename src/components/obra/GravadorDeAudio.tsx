@@ -3,7 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { formatarDuracao, formatoSuportado } from "@/lib/audio";
 
-const LIMITE_SEGUNDOS = 180;
+/**
+ * 90 segundos, e o motivo não é timeout (D138): medido, o tempo de resposta não
+ * acompanha a duração — um áudio de 66s respondeu em 4s e um de 20s em 10s. O
+ * que escala com a duração é o TAMANHO do arquivo, e a Vercel recusa corpo acima
+ * de ~4,5 MB; 90s de WAV mono 16 kHz em base64 dão ~3,8 MB.
+ *
+ * Também não corta em 30s: um recado real de "deixa eu te passar várias coisas"
+ * levou 66s e rendeu 7 registros corretos. Cortar no meio da frase custaria mais
+ * do que esperar.
+ */
+const LIMITE_SEGUNDOS = 90;
+const AVISO_SEGUNDOS = 60;
 
 /**
  * Gravação de áudio no composer (D124). Enquanto grava, o composer inteiro dá
@@ -125,10 +136,19 @@ export function GravadorDeAudio({
   return (
     <div className="flex flex-1 items-center gap-3 rounded-bubble bg-surface-alt px-4 py-2.5">
       <span aria-hidden className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-alert" />
-      <span className="font-display text-body font-bold text-ink" aria-live="polite">
+      <span
+        className={`font-display text-body font-bold ${
+          segundos >= AVISO_SEGUNDOS ? "text-alert" : "text-ink"
+        }`}
+        aria-live="polite"
+      >
         {formatarDuracao(segundos)}
       </span>
-      <span className="min-w-0 flex-1 truncate text-micro text-ink-soft">gravando…</span>
+      <span className="min-w-0 flex-1 truncate text-micro text-ink-soft">
+        {segundos >= AVISO_SEGUNDOS
+          ? `termina em ${LIMITE_SEGUNDOS - segundos}s`
+          : "gravando…"}
+      </span>
 
       <button
         type="button"

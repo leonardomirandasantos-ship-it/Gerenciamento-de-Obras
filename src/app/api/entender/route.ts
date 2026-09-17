@@ -38,7 +38,12 @@ function modelosPara(mime: string): string[] {
     ? [MODELO_RAPIDO, MODELO_BOM]
     : [MODELO_BOM, MODELO_RAPIDO];
 }
-const LIMITE_BYTES = 20 * 1024 * 1024;
+/**
+ * O limite real não é tempo, é o corpo da requisição: a Vercel recusa acima de
+ * ~4,5 MB. WAV mono 16 kHz são 32 KB/s e o base64 infla 4/3, então 90s de áudio
+ * dão ~3,8 MB — é daí que vem o teto de duração na gravação, não de timeout.
+ */
+const LIMITE_BYTES = 4 * 1024 * 1024;
 
 /**
  * Orçamento de tempo. Medido: uma chamada bem-sucedida levou 30s, e uma que

@@ -4,6 +4,8 @@ import { progressoChecklist } from "@/lib/checklist";
 import { formatarDuracao } from "@/lib/audio";
 import { ChipTipo } from "./ChipTipo";
 import { BotaoEncaminhar } from "./BotaoEncaminhar";
+import { BotaoReentenderAudio } from "./BotaoReentenderAudio";
+import type { ContextoDaObra } from "@/lib/capturar";
 import type { AudioPayload, ChecklistPayload, DecisaoPayload, Evento } from "@/lib/types";
 
 function ConteudoChecklist({ evento }: { evento: Evento }) {
@@ -41,7 +43,17 @@ function ConteudoDecisao({ evento }: { evento: Evento }) {
  * áudio é a fonte para conferir. Os registros derivados ficam listados junto,
  * senão ela não saberia que aquele áudio virou três coisas.
  */
-function ConteudoAudio({ evento }: { evento: Evento }) {
+function ConteudoAudio({
+  evento,
+  obraId,
+  faseAtualId,
+  contexto,
+}: {
+  evento: Evento;
+  obraId?: string;
+  faseAtualId?: string | null;
+  contexto?: ContextoDaObra;
+}) {
   const payload = evento.payload as AudioPayload;
   const audio = (evento.anexos ?? []).find((anexo) => anexo.tipo === "audio");
   const derivados = payload.derivedEventIds?.length ?? 0;
@@ -69,11 +81,35 @@ function ConteudoAudio({ evento }: { evento: Evento }) {
           ✓ virou {derivados} {derivados === 1 ? "registro" : "registros"} aqui embaixo
         </p>
       )}
+
+      {/* Sem transcrição, o entendimento falhou — e falha de modelo é comum. */}
+      {!payload.transcript && audio && obraId && contexto && (
+        <BotaoReentenderAudio
+          obraId={obraId}
+          eventoAudioId={evento.id}
+          urlDoAudio={audio.url}
+          faseAtualId={faseAtualId ?? null}
+          segundos={payload.durationSeconds ?? 0}
+          contexto={contexto}
+        />
+      )}
     </div>
   );
 }
 
-export function EventBubble({ evento, onEditar }: { evento: Evento; onEditar: () => void }) {
+export function EventBubble({
+  evento,
+  onEditar,
+  obraId,
+  faseAtualId,
+  contexto,
+}: {
+  evento: Evento;
+  onEditar: () => void;
+  obraId?: string;
+  faseAtualId?: string | null;
+  contexto?: ContextoDaObra;
+}) {
   const prazo = (evento.payload as { date?: string }).date;
   const vindoDeAudio = Boolean(
     (evento.payload as { sourceCaptureEventId?: string; sourceAudioEventId?: string })
@@ -106,7 +142,12 @@ export function EventBubble({ evento, onEditar }: { evento: Evento; onEditar: ()
       </div>
 
       {evento.kind === "E9_audio" ? (
-        <ConteudoAudio evento={evento} />
+        <ConteudoAudio
+          evento={evento}
+          obraId={obraId}
+          faseAtualId={faseAtualId}
+          contexto={contexto}
+        />
       ) : evento.kind === "E2_checklist" ? (
         <ConteudoChecklist evento={evento} />
       ) : evento.kind === "E3_decisao" ? (

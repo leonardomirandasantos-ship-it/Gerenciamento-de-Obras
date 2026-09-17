@@ -106,7 +106,13 @@ export function ConversaClient({
         <ul ref={feedRef} onScroll={aoRolar} className="flex-1 space-y-3 overflow-y-auto p-4">
           {eventos.map((evento) => (
             <li key={evento.id} id={`evento-${evento.id}`} className="space-y-2">
-              <EventBubble evento={evento} onEditar={() => setEditando(evento)} />
+              <EventBubble
+                evento={evento}
+                onEditar={() => setEditando(evento)}
+                obraId={obraId}
+                faseAtualId={faseAtualId}
+                contexto={contexto}
+              />
               {sugestaoAtiva?.eventoId === evento.id && (
                 <SuggestionCard sugestao={sugestaoAtiva} evento={evento} obraId={obraId} />
               )}

@@ -396,8 +396,47 @@ export async function capturarAudio({
     };
   }
 
+  return entenderEAplicarAudio({
+    supabase,
+    obraId,
+    faseAtualId,
+    eventoAudioId: eventoAudio.id,
+    wav: paraEnviar,
+    nomeWav: nomeEnviado,
+    nomeOriginal: nome,
+    segundos,
+    contexto,
+  });
+}
+
+/**
+ * Manda o WAV para a rota e grava o resultado. Separado da captura para poder
+ * ser chamado DE NOVO (D139): o 503 "high demand" do modelo é frequente, e sem
+ * repetir a única saída era apagar o áudio e regravar.
+ */
+async function entenderEAplicarAudio({
+  supabase,
+  obraId,
+  faseAtualId,
+  eventoAudioId,
+  wav,
+  nomeWav,
+  nomeOriginal,
+  segundos,
+  contexto,
+}: {
+  supabase: ReturnType<typeof createClient>;
+  obraId: string;
+  faseAtualId: string | null;
+  eventoAudioId: string;
+  wav: Blob;
+  nomeWav: string;
+  nomeOriginal: string;
+  segundos: number;
+  contexto: ContextoDaObra;
+}): Promise<ResultadoDoAudio> {
   const { entendimento, aviso } = await pedirEntendimento(
-    new File([paraEnviar], nomeEnviado, { type: "audio/wav" }),
+    new File([wav], nomeWav, { type: "audio/wav" }),
     contexto,
   );
 
@@ -406,9 +445,8 @@ export async function capturarAudio({
   }
 
   const derivados: string[] = [];
-
   for (const registro of entendimento.registros ?? []) {
-    const id = await criarDerivado(supabase, obraId, faseAtualId, eventoAudio.id, registro);
+    const id = await criarDerivado(supabase, obraId, faseAtualId, eventoAudioId, registro);
     if (id) derivados.push(id);
   }
 
@@ -417,15 +455,61 @@ export async function capturarAudio({
     .update({
       raw_text: entendimento.transcricao || null,
       payload: {
-        fileName: nome,
+        fileName: nomeOriginal,
         durationSeconds: segundos,
         transcript: entendimento.transcricao,
         derivedEventIds: derivados,
       },
     })
-    .eq("id", eventoAudio.id);
+    .eq("id", eventoAudioId);
 
   return { transcricao: entendimento.transcricao ?? "", criados: derivados.length };
+}
+
+/**
+ * Tenta entender de novo um áudio já guardado. Baixa o original do Storage,
+ * converte e repete o pedido — o arquivo nunca se perdeu, só o entendimento.
+ */
+export async function reentenderAudio({
+  obraId,
+  eventoAudioId,
+  urlDoAudio,
+  faseAtualId,
+  segundos,
+  contexto,
+}: {
+  obraId: string;
+  eventoAudioId: string;
+  /** URL assinada do anexo, como a conversa já recebe. */
+  urlDoAudio: string;
+  faseAtualId: string | null;
+  segundos: number;
+  contexto: ContextoDaObra;
+}): Promise<ResultadoDoAudio> {
+  const supabase = createClient();
+
+  try {
+    const resposta = await fetch(urlDoAudio);
+    if (!resposta.ok) throw new Error(`storage respondeu ${resposta.status}`);
+
+    const original = await resposta.blob();
+    const wav = await paraWavMono16k(original);
+
+    return entenderEAplicarAudio({
+      supabase,
+      obraId,
+      faseAtualId,
+      eventoAudioId,
+      wav,
+      nomeWav: "audio.wav",
+      nomeOriginal: `audio-${eventoAudioId}`,
+      segundos,
+      contexto,
+    });
+  } catch (erro) {
+    console.error("[reentender]", erro);
+    return { transcricao: "", criados: 0, aviso: "Não consegui buscar o áudio para tentar de novo." };
+  }
 }
 
 async function criarDerivado(
