@@ -34,6 +34,7 @@ export type DecisaoPayload = {
   title?: string;
   value?: string;
   environment?: string;
+  environments?: string[];
 };
 
 export type CasoSugestao =

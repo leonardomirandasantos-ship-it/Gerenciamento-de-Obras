@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ObraTabs } from "@/components/obra/ObraTabs";
 
@@ -13,14 +13,9 @@ export default async function ObraLayout({
   const { id } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
+  // Sem getUser() aqui de propósito: o proxy.ts já barra quem não está logado
+  // e a RLS já limita os dados ao dono — uma ida a mais ao Auth por navegação
+  // custava ~200ms em cada troca de aba.
   const { data: obra } = await supabase
     .from("obras")
     .select("id, name, location")

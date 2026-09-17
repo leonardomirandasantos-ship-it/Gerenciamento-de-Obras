@@ -5,7 +5,12 @@ import { detectarSugestoes, ordenarPorPrioridade } from "@/lib/suggestions";
 import { ChecklistCard } from "@/components/obra/ChecklistCard";
 import { ListaCard } from "@/components/obra/ListaCard";
 import { SuggestionCard } from "@/components/obra/SuggestionCard";
-import type { ChecklistPayload, ListaPayload, SugestaoRegistro } from "@/lib/types";
+import { PrazosLista } from "@/components/obra/PrazosLista";
+import type {
+  ChecklistPayload,
+  ListaPayload,
+  SugestaoRegistro,
+} from "@/lib/types";
 
 export default async function PendenciasPage({
   params,
@@ -26,11 +31,15 @@ export default async function PendenciasPage({
   // ela mandou pode "desaparecer" por não ter aceitado uma sugestão (D3).
   const listasSoltas = eventos.filter(
     (evento) =>
-      evento.kind === "E1_lista" && !(evento.payload as ListaPayload).linkedChecklistId,
+      evento.kind === "E1_lista" &&
+      !(evento.payload as ListaPayload).linkedChecklistId,
   );
 
   const comPrazo = eventos
-    .filter((evento) => Boolean((evento.payload as { date?: string }).date))
+    .filter((evento) => {
+      const payload = evento.payload as { date?: string; done?: boolean };
+      return Boolean(payload.date) && !payload.done;
+    })
     .sort((a, b) =>
       String((a.payload as { date?: string }).date).localeCompare(
         String((b.payload as { date?: string }).date),
@@ -77,42 +86,7 @@ export default async function PendenciasPage({
             Com prazo
           </h2>
 
-          <ul className="space-y-2">
-            {comPrazo.map((evento) => {
-              const prazo = String((evento.payload as { date?: string }).date);
-              return (
-                <li
-                  key={evento.id}
-                  className="flex items-start justify-between gap-2 rounded-card border border-line bg-surface p-3"
-                >
-                  <span className="min-w-0 flex-1 text-sm text-ink">
-                    {evento.raw_text ?? "Registro"}
-                  </span>
-                  <span
-                    className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-                    style={{ backgroundColor: "var(--color-info)" }}
-                  >
-                    {new Date(`${prazo}T00:00:00`).toLocaleDateString("pt-BR")}
-                  </span>
-                </li>
-              );
-            })}
-
-            {itensComPrazo.map(({ item, checklist }) => (
-              <li
-                key={`${checklist.id}-${item.text}`}
-                className="flex items-start justify-between gap-2 rounded-card border border-line bg-surface p-3"
-              >
-                <span className="min-w-0 flex-1 text-sm text-ink">{item.text}</span>
-                <span
-                  className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-                  style={{ backgroundColor: "var(--color-info)" }}
-                >
-                  {new Date(`${item.date}T00:00:00`).toLocaleDateString("pt-BR")}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <PrazosLista eventos={comPrazo} itens={itensComPrazo} />
         </section>
       )}
 
@@ -158,7 +132,10 @@ export default async function PendenciasPage({
         </section>
       )}
 
-      <Link href={`/obras/${id}/conversa`} className="block pt-2 text-xs text-primary underline">
+      <Link
+        href={`/obras/${id}/conversa`}
+        className="block pt-2 text-xs text-primary underline"
+      >
         voltar para a conversa
       </Link>
     </div>

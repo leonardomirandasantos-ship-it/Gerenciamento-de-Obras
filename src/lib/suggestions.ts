@@ -1,5 +1,6 @@
 import { compararComChecklist, extrairItensDeLista, pareceMesmaLista } from "./checklist";
 import { extrairDataMencionada, formatarData } from "./datas";
+import { detectarAmbientes } from "./ambientes";
 import type {
   CasoSugestao,
   ChecklistPayload,
@@ -152,14 +153,17 @@ export function detectarSugestoes(
         !jaResolvida("D_decisao", evento.id, registros)
       ) {
         const { title, value } = extrairTituloEValor(texto);
+        const ambientes = detectarAmbientes(texto);
         sugestoes.push({
           caso: "D_decisao",
           eventoId: evento.id,
-          gatilho: "Parece uma decisão de acabamento",
+          gatilho: ambientes.length > 0
+            ? `Parece decisão de acabamento (${ambientes.join(", ")})`
+            : "Parece uma decisão de acabamento",
           proposta: `Fixar "${title}" nas decisões da obra?`,
-          porque: "Fica fácil consultar depois, sem procurar na conversa.",
+          porque: "Fica fácil consultar depois, filtrando por ambiente.",
           acaoLabel: "Fixar decisão",
-          dados: { title, value },
+          dados: { title, value, environment: ambientes[0], environments: ambientes },
         });
         continue;
       }

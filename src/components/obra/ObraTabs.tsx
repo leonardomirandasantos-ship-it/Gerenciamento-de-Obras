@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 
 const ABAS = [
@@ -12,6 +12,18 @@ const ABAS = [
   { slug: "decisoes", label: "Decisões" },
   { slug: "dash", label: "Dash" },
 ];
+
+/** Bolinha pulsando enquanto a navegação da aba não completa. */
+function Pendente() {
+  const { pending } = useLinkStatus();
+  if (!pending) return null;
+  return (
+    <span
+      aria-hidden
+      className="ml-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary align-middle"
+    />
+  );
+}
 
 export function ObraTabs({ obraId }: { obraId: string }) {
   const pathname = usePathname();
@@ -37,6 +49,7 @@ export function ObraTabs({ obraId }: { obraId: string }) {
             }`}
           >
             {aba.label}
+            <Pendente />
           </Link>
         );
       })}

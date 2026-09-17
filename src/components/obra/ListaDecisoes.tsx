@@ -2,23 +2,38 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { AMBIENTES, detectarAmbientes } from "@/lib/ambientes";
 import type { DecisaoPayload, Evento } from "@/lib/types";
 
-const AMBIENTES = ["Sala", "Banheiro", "Quartos", "Cozinha", "Área externa"];
-
-export function ListaDecisoes({ obraId, eventos }: { obraId: string; eventos: Evento[] }) {
+export function ListaDecisoes({
+  obraId,
+  eventos,
+}: {
+  obraId: string;
+  eventos: Evento[];
+}) {
   const [busca, setBusca] = useState("");
   const [ambiente, setAmbiente] = useState("todos");
 
-  const decisoes = eventos.map((evento) => ({
-    evento,
-    payload: evento.payload as DecisaoPayload,
-  }));
+  // O ambiente funciona sozinho: se a decisão ainda não foi "fixada", detecto
+  // na hora a partir do texto — fixar só enriquece o que já estava lá.
+  const decisoes = eventos.map((evento) => {
+    const payload = evento.payload as DecisaoPayload;
+    const ambientes =
+      payload.environments ??
+      (payload.environment
+        ? [payload.environment]
+        : detectarAmbientes(evento.raw_text ?? ""));
+    return { evento, payload, ambientes };
+  });
 
-  const filtradas = decisoes.filter(({ evento, payload }) => {
-    const texto = `${payload.title ?? ""} ${payload.value ?? ""} ${evento.raw_text ?? ""}`.toLowerCase();
-    const casaBusca = busca.trim() === "" || texto.includes(busca.toLowerCase());
-    const casaAmbiente = ambiente === "todos" || payload.environment === ambiente;
+  const filtradas = decisoes.filter(({ evento, payload, ambientes }) => {
+    const texto =
+      `${payload.title ?? ""} ${payload.value ?? ""} ${evento.raw_text ?? ""} ${ambientes.join(" ")}`.toLowerCase();
+    const casaBusca =
+      busca.trim() === "" || texto.includes(busca.toLowerCase());
+    const casaAmbiente =
+      ambiente === "todos" || ambientes.includes(ambiente as never);
     return casaBusca && casaAmbiente;
   });
 
@@ -48,7 +63,9 @@ export function ListaDecisoes({ obraId, eventos }: { obraId: string; eventos: Ev
             type="button"
             onClick={() => setAmbiente(opcao)}
             className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium ${
-              ambiente === opcao ? "border-primary bg-primary text-white" : "border-line text-ink-soft"
+              ambiente === opcao
+                ? "border-primary bg-primary text-white"
+                : "border-line text-ink-soft"
             }`}
           >
             {opcao === "todos" ? "Todas" : opcao}
@@ -57,8 +74,11 @@ export function ListaDecisoes({ obraId, eventos }: { obraId: string; eventos: Ev
       </div>
 
       <ul className="space-y-2">
-        {filtradas.map(({ evento, payload }) => (
-          <li key={evento.id} className="rounded-card border border-line bg-surface p-3">
+        {filtradas.map(({ evento, payload, ambientes }) => (
+          <li
+            key={evento.id}
+            className="rounded-card border border-line bg-surface p-3"
+          >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 space-y-0.5">
                 <span
@@ -67,12 +87,25 @@ export function ListaDecisoes({ obraId, eventos }: { obraId: string; eventos: Ev
                 >
                   decisão
                 </span>
-                <p className="font-medium text-ink">{payload.title ?? evento.raw_text}</p>
-                {payload.value && <p className="text-sm text-ink-soft">{payload.value}</p>}
-                <p className="text-[11px] text-ink-soft">
-                  {new Date(evento.received_at).toLocaleDateString("pt-BR")}
-                  {payload.environment ? ` · ${payload.environment}` : ""}
+                <p className="font-medium text-ink">
+                  {payload.title ?? evento.raw_text}
                 </p>
+                {payload.value && (
+                  <p className="text-sm text-ink-soft">{payload.value}</p>
+                )}
+                <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                  {ambientes.map((nome) => (
+                    <span
+                      key={nome}
+                      className="rounded-full bg-surface-alt px-2 py-0.5 text-[11px] text-ink-soft"
+                    >
+                      {nome}
+                    </span>
+                  ))}
+                  <span className="text-[11px] text-ink-soft">
+                    {new Date(evento.received_at).toLocaleDateString("pt-BR")}
+                  </span>
+                </div>
               </div>
               <Link
                 href={`/obras/${obraId}/conversa#evento-${evento.id}`}
@@ -86,7 +119,9 @@ export function ListaDecisoes({ obraId, eventos }: { obraId: string; eventos: Ev
       </ul>
 
       {filtradas.length === 0 && (
-        <p className="text-sm text-ink-soft">Nenhuma decisão encontrada com esse filtro.</p>
+        <p className="text-sm text-ink-soft">
+          Nenhuma decisão encontrada com esse filtro.
+        </p>
       )}
     </div>
   );

@@ -12,10 +12,11 @@ export default async function ConversaPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [eventos, { data: fases }, { data: registros }] = await Promise.all([
+  const [eventos, { data: fases }, { data: registros }, { data: obra }] = await Promise.all([
     carregarEventosComAnexos(supabase, id),
     supabase.from("fases").select("*").eq("obra_id", id).order("order", { ascending: true }),
     supabase.from("sugestoes").select("*").eq("obra_id", id),
+    supabase.from("obras").select("current_phase_id").eq("id", id).single(),
   ]);
 
   const sugestoes = detectarSugestoes(eventos, (registros ?? []) as SugestaoRegistro[]);
@@ -26,6 +27,7 @@ export default async function ConversaPage({
       eventos={eventos}
       fases={fases ?? []}
       sugestoes={sugestoes}
+      faseAtualId={obra?.current_phase_id ?? null}
     />
   );
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { classificar } from "@/lib/classify";
 import { extrairDadosPagamento } from "@/lib/pagamento";
+import type { Pendente } from "./ConversaClient";
 import type { AnexoTipo } from "@/lib/types";
 
 function tipoDoArquivo(file: File): AnexoTipo {
@@ -14,7 +15,15 @@ function tipoDoArquivo(file: File): AnexoTipo {
   return "audio";
 }
 
-export function ComposerInput({ obraId }: { obraId: string }) {
+export function ComposerInput({
+  obraId,
+  faseAtualId,
+  onPendente,
+}: {
+  obraId: string;
+  faseAtualId: string | null;
+  onPendente: (pendente: Pendente) => void;
+}) {
   const router = useRouter();
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -24,10 +33,6 @@ export function ComposerInput({ obraId }: { obraId: string }) {
     const conteudo = texto.trim();
     if (!conteudo || enviando) return;
 
-    setTexto("");
-    setEnviando(true);
-
-    const supabase = createClient();
     const { kind, confidence } = classificar({
       texto: conteudo,
       temFoto: false,
@@ -36,11 +41,18 @@ export function ComposerInput({ obraId }: { obraId: string }) {
       temAudio: false,
     });
 
+    // Some do input e aparece no feed na hora — a captura não espera o banco.
+    setTexto("");
+    onPendente({ id: crypto.randomUUID(), texto: conteudo, kind });
+    setEnviando(true);
+
+    const supabase = createClient();
     await supabase.from("eventos").insert({
       obra_id: obraId,
       kind,
       confidence,
       raw_text: conteudo,
+      phase_id: faseAtualId,
       payload: kind === "E7_pagamento" ? extrairDadosPagamento(conteudo) : {},
     });
 
@@ -49,6 +61,21 @@ export function ComposerInput({ obraId }: { obraId: string }) {
   }
 
   async function enviarArquivos(files: FileList) {
+    const lista = Array.from(files);
+    for (const file of lista) {
+      onPendente({
+        id: crypto.randomUUID(),
+        texto: `📎 ${file.name}`,
+        kind: classificar({
+          texto: file.name,
+          temFoto: file.type.startsWith("image/"),
+          temVideo: file.type.startsWith("video/"),
+          temPdf: file.type === "application/pdf",
+          temAudio: false,
+        }).kind,
+      });
+    }
+
     setEnviando(true);
     const supabase = createClient();
     const {
@@ -60,7 +87,7 @@ export function ComposerInput({ obraId }: { obraId: string }) {
       return;
     }
 
-    for (const file of Array.from(files)) {
+    for (const file of lista) {
       const tipo = tipoDoArquivo(file);
       // O nome do arquivo entra na classificação: "Orçamento 335396.pdf" → E8.
       const { kind, confidence } = classificar({
@@ -77,7 +104,13 @@ export function ComposerInput({ obraId }: { obraId: string }) {
 
       const { data: evento } = await supabase
         .from("eventos")
-        .insert({ obra_id: obraId, kind, confidence, payload: { fileName: file.name } })
+        .insert({
+          obra_id: obraId,
+          kind,
+          confidence,
+          phase_id: faseAtualId,
+          payload: { fileName: file.name },
+        })
         .select("id")
         .single();
 
@@ -131,11 +164,15 @@ export function ComposerInput({ obraId }: { obraId: string }) {
       <button
         type="button"
         onClick={enviarTexto}
-        disabled={enviando || !texto.trim()}
+        disabled={!texto.trim()}
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-lg text-white disabled:opacity-40"
         aria-label="Enviar"
       >
-        ➤
+        {enviando ? (
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+        ) : (
+          "➤"
+        )}
       </button>
     </div>
   );

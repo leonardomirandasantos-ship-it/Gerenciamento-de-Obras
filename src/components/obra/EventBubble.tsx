@@ -1,13 +1,8 @@
 "use client";
 
 import { progressoChecklist } from "@/lib/checklist";
-import {
-  RÓTULO_TIPO,
-  COR_TIPO,
-  type ChecklistPayload,
-  type DecisaoPayload,
-  type Evento,
-} from "@/lib/types";
+import { ChipTipo } from "./ChipTipo";
+import type { ChecklistPayload, DecisaoPayload, Evento } from "@/lib/types";
 
 function ConteudoChecklist({ evento }: { evento: Evento }) {
   const payload = evento.payload as ChecklistPayload;
@@ -39,20 +34,12 @@ function ConteudoDecisao({ evento }: { evento: Evento }) {
 }
 
 export function EventBubble({ evento, onEditar }: { evento: Evento; onEditar: () => void }) {
-  const naoClassificado = evento.kind === "unclassified";
   const prazo = (evento.payload as { date?: string }).date;
 
   return (
     <div className="flex max-w-[85%] flex-col gap-2 rounded-bubble rounded-tl-sm bg-surface p-3 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <span
-          className="rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-          style={{
-            backgroundColor: naoClassificado ? "var(--color-unclassified)" : COR_TIPO[evento.kind],
-          }}
-        >
-          {RÓTULO_TIPO[evento.kind]}
-        </span>
+        <ChipTipo kind={evento.kind} />
         <button type="button" onClick={onEditar} className="text-[11px] text-ink-soft underline">
           editar
         </button>

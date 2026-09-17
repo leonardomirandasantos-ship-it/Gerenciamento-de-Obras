@@ -157,6 +157,8 @@ export async function aplicarSugestao(
           ...evento.payload,
           title: sugestao.dados.title,
           value: sugestao.dados.value,
+          environment: sugestao.dados.environment,
+          environments: sugestao.dados.environments,
         },
       })
       .eq("id", evento.id);

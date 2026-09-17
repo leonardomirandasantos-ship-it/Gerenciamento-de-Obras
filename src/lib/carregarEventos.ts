@@ -6,6 +6,9 @@ type ServerClient = Awaited<ReturnType<typeof createClient>>;
 /**
  * Carrega eventos da obra já com as URLs assinadas dos anexos (o bucket é
  * privado). Usado pela conversa e pelas lentes — nenhuma delas captura (D13).
+ *
+ * As URLs são assinadas em UMA chamada para todos os anexos: uma chamada por
+ * anexo deixava a obra visivelmente lenta quando havia muitas fotos.
  */
 export async function carregarEventosComAnexos(
   supabase: ServerClient,
@@ -23,19 +26,29 @@ export async function carregarEventosComAnexos(
   }
 
   const { data } = await query.order("received_at", { ascending: true });
+  const eventos = (data ?? []) as (Evento & { anexos?: Anexo[] })[];
 
-  return Promise.all(
-    (data ?? []).map(async (evento) => {
-      const anexos: Anexo[] = await Promise.all(
-        ((evento.anexos ?? []) as Anexo[]).map(async (anexo) => {
-          const { data: assinada } = await supabase.storage
-            .from("anexos")
-            .createSignedUrl(anexo.url, 60 * 60);
-          return { ...anexo, url: assinada?.signedUrl ?? anexo.url };
-        }),
-      );
-
-      return { ...evento, anexos } as Evento;
-    }),
+  const caminhos = eventos.flatMap((evento) =>
+    (evento.anexos ?? []).map((anexo) => anexo.url),
   );
+
+  if (caminhos.length === 0) {
+    return eventos.map((evento) => ({ ...evento, anexos: evento.anexos ?? [] }));
+  }
+
+  const { data: assinadas } = await supabase.storage
+    .from("anexos")
+    .createSignedUrls(caminhos, 60 * 60);
+
+  const porCaminho = new Map(
+    (assinadas ?? []).map((item) => [item.path ?? "", item.signedUrl]),
+  );
+
+  return eventos.map((evento) => ({
+    ...evento,
+    anexos: (evento.anexos ?? []).map((anexo) => ({
+      ...anexo,
+      url: porCaminho.get(anexo.url) ?? anexo.url,
+    })),
+  }));
 }
