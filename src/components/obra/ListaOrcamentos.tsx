@@ -44,7 +44,7 @@ export function ListaOrcamentos({ obraId, eventos }: { obraId: string; eventos: 
   }
 
   return (
-    <div className="flex-1 space-y-4 overflow-y-auto p-4">
+    <div className="flex-1 space-y-4 overflow-y-auto p-4 pb-28">
       <Link href={`/obras/${obraId}/dash`} className="text-xs text-ink-soft underline">
         ← voltar ao dash
       </Link>
@@ -64,7 +64,7 @@ export function ListaOrcamentos({ obraId, eventos }: { obraId: string; eventos: 
             payload.product || payload.fileName || evento.raw_text?.slice(0, 60) || "Orçamento";
 
           return (
-            <li key={evento.id} className="flex items-start gap-3 rounded-card border border-line bg-surface p-3">
+            <li key={evento.id} className="flex items-start gap-3 rounded-card bg-surface shadow-card p-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-surface-alt text-lg">
                 📄
               </div>

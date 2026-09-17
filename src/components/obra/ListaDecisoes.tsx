@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { AMBIENTES, detectarAmbientes } from "@/lib/ambientes";
+import { VerNoChat } from "./VerNoChat";
 import type { DecisaoPayload, Evento } from "@/lib/types";
 
 export function ListaDecisoes({
@@ -48,7 +48,7 @@ export function ListaDecisoes({
   }
 
   return (
-    <div className="flex-1 space-y-4 overflow-y-auto p-4">
+    <div className="flex-1 space-y-4 overflow-y-auto p-4 pb-28">
       <input
         value={busca}
         onChange={(e) => setBusca(e.target.value)}
@@ -62,10 +62,10 @@ export function ListaDecisoes({
             key={opcao}
             type="button"
             onClick={() => setAmbiente(opcao)}
-            className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium ${
+            className={`shrink-0 rounded-full border px-4 py-1.5 font-display text-caption font-semibold ${
               ambiente === opcao
                 ? "border-primary bg-primary text-white"
-                : "border-line text-ink-soft"
+                : "border-line bg-surface text-ink-soft"
             }`}
           >
             {opcao === "todos" ? "Todas" : opcao}
@@ -77,51 +77,55 @@ export function ListaDecisoes({
         {filtradas.map(({ evento, payload, ambientes }) => (
           <li
             key={evento.id}
-            className="rounded-card border border-line bg-surface p-3"
+            className="rounded-card bg-surface shadow-card p-3"
           >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 space-y-0.5">
-                <span
-                  className="inline-block rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-                  style={{ backgroundColor: "var(--color-primary)" }}
-                >
-                  decisão
+            <div className="flex items-start gap-3">
+              {/* Miniatura só quando a decisão veio com foto: o mockup mostra
+                  imagem em toda decisão, mas na prática a maioria é texto —
+                  melhor sem miniatura do que com um quadrado cinza. */}
+              {(() => {
+                const foto = (evento.anexos ?? []).find((anexo) => anexo.tipo === "foto");
+                if (!foto) return null;
+                return (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={foto.url}
+                    alt=""
+                    className="h-16 w-16 shrink-0 rounded-card object-cover"
+                  />
+                );
+              })()}
+
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <span className="chip" style={{ "--chip": "var(--primary)" } as React.CSSProperties}>
+                  ✓ decisão
                 </span>
-                <p className="font-medium text-ink">
+                <p className="font-display text-body font-bold text-ink">
                   {payload.title ?? evento.raw_text}
                 </p>
-                {payload.value && (
-                  <p className="text-sm text-ink-soft">{payload.value}</p>
-                )}
+                {payload.value && <p className="text-caption text-ink-soft">{payload.value}</p>}
                 <div className="flex flex-wrap items-center gap-1 pt-0.5">
                   {ambientes.map((nome) => (
                     <span
                       key={nome}
-                      className="rounded-full bg-surface-alt px-2 py-0.5 text-[11px] text-ink-soft"
+                      className="rounded-full bg-surface-alt px-2 py-0.5 text-micro text-ink-soft"
                     >
                       {nome}
                     </span>
                   ))}
-                  <span className="text-[11px] text-ink-soft">
+                  <span className="text-micro text-ink-soft">
                     {new Date(evento.received_at).toLocaleDateString("pt-BR")}
                   </span>
                 </div>
               </div>
-              <Link
-                href={`/obras/${obraId}/conversa#evento-${evento.id}`}
-                className="shrink-0 text-[11px] text-primary underline"
-              >
-                ver no chat
-              </Link>
+              <VerNoChat obraId={obraId} eventoId={evento.id} />
             </div>
           </li>
         ))}
       </ul>
 
       {filtradas.length === 0 && (
-        <p className="text-sm text-ink-soft">
-          Nenhuma decisão encontrada com esse filtro.
-        </p>
+        <p className="text-caption text-ink-soft">Nenhuma decisão encontrada com esse filtro.</p>
       )}
     </div>
   );

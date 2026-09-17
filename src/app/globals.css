@@ -1,35 +1,64 @@
 @import "tailwindcss";
+/* Fonte da verdade dos tokens (09_ASSETS_E_DESIGN_HANDOFF).
+   Não duplicar hex aqui: mudou lá, muda no app inteiro. */
+@import "../../public/assets/tokens/tokens.css";
 
+/* Ponte tokens → Tailwind: as utilities (bg-primary, text-ink…) passam a
+   apontar para as variáveis do tokens.css em vez de terem cópia própria. */
 @theme {
-  --color-bg-paper: #f4f1ea;
-  --color-surface: #ffffff;
-  --color-surface-alt: #ede8dd;
-  --color-ink: #2a2a28;
-  --color-ink-soft: #6b675e;
-  --color-line: #ded8cc;
+  --color-bg-paper: var(--bg-paper);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-line: var(--line);
 
-  --color-primary: #1f5c57;
-  --color-primary-dark: #153f3b;
-  --color-primary-soft: #dce9e7;
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-soft: var(--primary-soft);
 
-  --color-pending: #e0913a;
-  --color-done: #3e8e5a;
-  --color-info: #3a6ea5;
-  --color-unclassified: #9b968c;
-  --color-alert: #c0553b;
+  --color-pending: var(--pending);
+  --color-done: var(--done);
+  --color-info: var(--info);
+  --color-unclassified: var(--unclassified);
+  --color-alert: var(--alert);
 
-  --font-display: var(--font-nunito), system-ui, sans-serif;
-  --font-body: var(--font-inter), system-ui, sans-serif;
+  --color-phase-fundacao: var(--phase-fundacao);
+  --color-phase-estrutura: var(--phase-estrutura);
+  --color-phase-hidraulica: var(--phase-hidraulica);
+  --color-phase-eletrica: var(--phase-eletrica);
+  --color-phase-acabamento: var(--phase-acabamento);
 
-  --radius-card: 16px;
-  --radius-bubble: 18px;
-  --radius-sheet: 20px;
+  /* Nunito e Inter entram por next/font; o fallback vem do tokens.css. */
+  --font-display: var(--font-nunito), "Nunito", "SF Pro Rounded", system-ui, sans-serif;
+  --font-body: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
+
+  --text-title: var(--fs-title);
+  --text-title--line-height: var(--lh-title);
+  --text-section: var(--fs-section);
+  --text-section--line-height: var(--lh-section);
+  --text-body: var(--fs-body);
+  --text-body--line-height: var(--lh-body);
+  --text-caption: var(--fs-caption);
+  --text-caption--line-height: var(--lh-caption);
+  --text-micro: var(--fs-micro);
+  --text-micro--line-height: var(--lh-micro);
+
+  --radius-card: var(--radius-card);
+  --radius-bubble: var(--radius-bubble);
+  --radius-sheet: var(--radius-sheet);
+  --radius-fab: var(--radius-fab);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-sheet: var(--shadow-sheet);
 }
 
 body {
-  background: var(--color-bg-paper);
-  color: var(--color-ink);
+  background: var(--bg-paper);
+  color: var(--ink);
   font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
   /* Cara de app, não de site (D58) */
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
@@ -42,4 +71,22 @@ body {
 
 h1, h2, h3, .font-display {
   font-family: var(--font-display);
+}
+
+/* Chip de tipo — CSS copiado do styleguide (docs/design/index.html).
+   Fundo tingido + texto na cor, nunca preenchimento sólido. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  font-family: var(--font-display);
+  font-size: var(--fs-micro);
+  line-height: var(--lh-micro);
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  color: var(--chip, var(--primary));
+  background: color-mix(in srgb, var(--chip, var(--primary)) 14%, white);
+  border: 1px solid color-mix(in srgb, var(--chip, var(--primary)) 35%, white);
 }

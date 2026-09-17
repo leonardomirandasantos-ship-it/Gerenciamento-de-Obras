@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -42,11 +43,18 @@ export default function LoginPage() {
     <main className="flex flex-1 items-center justify-center bg-bg-paper p-6">
       <div className="w-full max-w-sm space-y-8">
         <div className="space-y-2 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl">
-            🏗️
-          </div>
-          <h1 className="font-display text-xl font-bold text-ink">Zap da Obra</h1>
-          <p className="text-sm text-ink-soft">O jeito mais simples de organizar sua obra</p>
+          {/* Logo oficial — nunca recriar em CSS/emoji (09_ASSETS).
+              O PNG tem fundo opaco (~#F9F7F3), que não é o --bg-paper: por isso
+              vai como placa arredondada, e não solto sobre o fundo. */}
+          <Image
+            src="/assets/logo/logo-horizontal.png"
+            alt="Zap da Obra"
+            width={1536}
+            height={1024}
+            priority
+            className="mx-auto h-auto w-60 rounded-card shadow-card"
+          />
+          <p className="text-caption text-ink-soft">O jeito mais simples de organizar sua obra</p>
         </div>
 
         <form onSubmit={entrar} className="space-y-4">

@@ -11,8 +11,8 @@ function ConteudoChecklist({ evento }: { evento: Evento }) {
 
   return (
     <div className="space-y-1">
-      <p className="text-sm font-medium text-ink">{payload.title ?? "Checklist"}</p>
-      <p className="text-xs text-ink-soft">
+      <p className="font-display text-body font-bold text-ink">{payload.title ?? "Checklist"}</p>
+      <p className="text-micro text-ink-soft">
         {feitos}/{total} itens · veja e marque na aba Pendências
       </p>
     </div>
@@ -22,13 +22,13 @@ function ConteudoChecklist({ evento }: { evento: Evento }) {
 function ConteudoDecisao({ evento }: { evento: Evento }) {
   const payload = evento.payload as DecisaoPayload;
   if (!payload.title) {
-    return <p className="whitespace-pre-wrap text-[15px] leading-[22px] text-ink">{evento.raw_text}</p>;
+    return <p className="whitespace-pre-wrap text-body text-ink">{evento.raw_text}</p>;
   }
 
   return (
     <div className="space-y-0.5">
-      <p className="text-sm font-medium text-ink">{payload.title}</p>
-      {payload.value && <p className="text-sm text-ink-soft">{payload.value}</p>}
+      <p className="font-display text-body font-bold text-ink">{payload.title}</p>
+      {payload.value && <p className="text-caption text-ink-soft">{payload.value}</p>}
     </div>
   );
 }
@@ -37,10 +37,10 @@ export function EventBubble({ evento, onEditar }: { evento: Evento; onEditar: ()
   const prazo = (evento.payload as { date?: string }).date;
 
   return (
-    <div className="flex max-w-[85%] flex-col gap-2 rounded-bubble rounded-tl-sm bg-surface p-3 shadow-sm">
+    <div className="flex max-w-[85%] flex-col gap-2 rounded-bubble rounded-tl-sm bg-surface p-3 shadow-card">
       <div className="flex items-center justify-between gap-2">
         <ChipTipo kind={evento.kind} />
-        <button type="button" onClick={onEditar} className="text-[11px] text-ink-soft underline">
+        <button type="button" onClick={onEditar} className="text-micro text-ink-soft underline">
           editar
         </button>
       </div>
@@ -50,7 +50,7 @@ export function EventBubble({ evento, onEditar }: { evento: Evento; onEditar: ()
       ) : evento.kind === "E3_decisao" ? (
         <ConteudoDecisao evento={evento} />
       ) : (
-        evento.raw_text && <p className="whitespace-pre-wrap text-[15px] leading-[22px] text-ink">{evento.raw_text}</p>
+        evento.raw_text && <p className="whitespace-pre-wrap text-body text-ink">{evento.raw_text}</p>
       )}
 
       {evento.anexos && evento.anexos.length > 0 && (
@@ -72,7 +72,7 @@ export function EventBubble({ evento, onEditar }: { evento: Evento; onEditar: ()
                 href={anexo.url}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-card border border-line px-3 py-2 text-xs text-primary underline"
+                className="rounded-card border border-line px-3 py-2 text-caption text-primary underline"
               >
                 📄 abrir arquivo
               </a>
@@ -81,13 +81,13 @@ export function EventBubble({ evento, onEditar }: { evento: Evento; onEditar: ()
         </div>
       )}
 
-      {evento.caption && <p className="text-xs text-ink-soft">{evento.caption}</p>}
+      {evento.caption && <p className="text-micro text-ink-soft">{evento.caption}</p>}
 
-      <div className="flex items-center gap-2 text-[11px] text-ink-soft">
+      <div className="flex items-center gap-2 text-micro text-ink-soft">
         <span>{new Date(evento.received_at).toLocaleString("pt-BR")}</span>
         {prazo && (
-          <span className="rounded-full px-1.5 py-0.5 text-white" style={{ backgroundColor: "var(--color-info)" }}>
-            prazo {new Date(`${prazo}T00:00:00`).toLocaleDateString("pt-BR")}
+          <span className="chip" style={{ "--chip": "var(--info)" } as React.CSSProperties}>
+            📅 {new Date(`${prazo}T00:00:00`).toLocaleDateString("pt-BR")}
           </span>
         )}
       </div>

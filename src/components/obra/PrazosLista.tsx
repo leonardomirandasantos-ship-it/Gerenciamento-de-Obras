@@ -87,15 +87,12 @@ export function PrazosLista({
         return (
           <li
             key={evento.id}
-            className="flex items-center gap-2 rounded-card border border-line bg-surface p-3"
+            className="flex items-center gap-2 rounded-card bg-surface p-3 shadow-card"
           >
             <div className="min-w-0 flex-1">
-              <p className="text-sm text-ink">{evento.raw_text ?? "Registro"}</p>
-              <span
-                className="mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-                style={{ backgroundColor: "var(--color-info)" }}
-              >
-                {formatarData(prazo)}
+              <p className="text-body text-ink">{evento.raw_text ?? "Registro"}</p>
+              <span className="chip mt-1" style={{ "--chip": "var(--info)" } as React.CSSProperties}>
+                📅 {formatarData(prazo)}
               </span>
             </div>
             <Acoes
@@ -109,15 +106,12 @@ export function PrazosLista({
       {itens.map((entrada) => (
         <li
           key={`${entrada.checklist.id}-${entrada.item.text}`}
-          className="flex items-center gap-2 rounded-card border border-line bg-surface p-3"
+          className="flex items-center gap-2 rounded-card bg-surface p-3 shadow-card"
         >
           <div className="min-w-0 flex-1">
-            <p className="text-sm text-ink">{entrada.item.text}</p>
-            <span
-              className="mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-              style={{ backgroundColor: "var(--color-info)" }}
-            >
-              {formatarData(String(entrada.item.date))}
+            <p className="text-body text-ink">{entrada.item.text}</p>
+            <span className="chip mt-1" style={{ "--chip": "var(--info)" } as React.CSSProperties}>
+              📅 {formatarData(String(entrada.item.date))}
             </span>
           </div>
           <Acoes

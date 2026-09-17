@@ -204,7 +204,7 @@ export function GaleriaDocumentacao({
   }
 
   return (
-    <div className="flex-1 space-y-4 overflow-y-auto p-4">
+    <div className="flex-1 space-y-4 overflow-y-auto p-4 pb-28">
       <div className="flex gap-2 overflow-x-auto pb-1">
         {[
           { id: "todas", name: "Todas" },

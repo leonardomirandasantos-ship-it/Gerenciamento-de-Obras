@@ -3,17 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { PALETA_DE_FASES } from "@/lib/tokens";
 import type { Fase, Obra } from "@/lib/types";
-
-const CORES_DISPONIVEIS = [
-  "#9B6A43",
-  "#1F5C57",
-  "#3A6EA5",
-  "#E0913A",
-  "#3E8E5A",
-  "#C0553B",
-  "#6B675E",
-];
 
 export function ConfiguracoesObra({ obra, fases }: { obra: Obra; fases: Fase[] }) {
   const router = useRouter();
@@ -82,7 +73,7 @@ export function ConfiguracoesObra({ obra, fases }: { obra: Obra; fases: Fase[] }
     await supabase.from("fases").insert({
       obra_id: obra.id,
       name: nome,
-      color: CORES_DISPONIVEIS[fases.length % CORES_DISPONIVEIS.length],
+      color: PALETA_DE_FASES[fases.length % PALETA_DE_FASES.length],
       order: fases.length,
     });
     setNovaFase("");
@@ -98,7 +89,7 @@ export function ConfiguracoesObra({ obra, fases }: { obra: Obra; fases: Fase[] }
 
   return (
     <div className="flex-1 space-y-6 overflow-y-auto p-4">
-      <section className="space-y-3 rounded-card border border-line bg-surface p-4">
+      <section className="space-y-3 rounded-card bg-surface shadow-card p-4">
         <h2 className="text-sm font-semibold text-ink">Dados da obra</h2>
 
         <div className="space-y-1">
@@ -150,7 +141,7 @@ export function ConfiguracoesObra({ obra, fases }: { obra: Obra; fases: Fase[] }
         </button>
       </section>
 
-      <section className="space-y-3 rounded-card border border-line bg-surface p-4">
+      <section className="space-y-3 rounded-card bg-surface shadow-card p-4">
         <div>
           <h2 className="text-sm font-semibold text-ink">Fases da obra</h2>
           <p className="text-xs text-ink-soft">Use as setas para reordenar.</p>

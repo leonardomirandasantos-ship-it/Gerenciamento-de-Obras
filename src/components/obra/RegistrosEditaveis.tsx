@@ -36,7 +36,7 @@ export function RegistrosEditaveis({
             <button
               type="button"
               onClick={() => setEditando(evento)}
-              className="flex w-full items-center gap-2 rounded-card border border-line bg-surface p-3 text-left active:bg-surface-alt"
+              className="flex w-full items-center gap-2 rounded-card bg-surface shadow-card p-3 text-left active:bg-surface-alt"
             >
               <ChipTipo kind={evento.kind} />
               <span className="min-w-0 flex-1 truncate text-sm text-ink">

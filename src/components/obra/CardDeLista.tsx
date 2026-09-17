@@ -7,6 +7,7 @@ import { extrairItensDeLista, progressoChecklist } from "@/lib/checklist";
 import { formatarData } from "@/lib/datas";
 import { createClient } from "@/lib/supabase/client";
 import { SwipeParaExcluir } from "./SwipeParaExcluir";
+import { VerNoChat } from "./VerNoChat";
 import type { ChecklistItem, ChecklistPayload, Evento, ListaPayload } from "@/lib/types";
 
 /**
@@ -113,13 +114,13 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
 
   return (
     <SwipeParaExcluir onExcluir={tirarDaLista} rotulo="Tirar">
-      <div className="space-y-3 rounded-card border border-line bg-surface p-4">
+      <div className="space-y-3 rounded-card bg-surface shadow-card p-4">
         <div className="space-y-1">
           <div className="flex items-baseline justify-between gap-2">
-            <p className="font-display text-sm font-bold text-ink">
+            <p className="min-w-0 truncate font-display text-body font-bold text-ink">
               Lista de {new Date(data).toLocaleDateString("pt-BR")}
             </p>
-            <span className="shrink-0 text-xs text-ink-soft">
+            <span className="shrink-0 font-display text-caption font-bold text-done">
               {feitos}/{total}
             </span>
           </div>
@@ -151,19 +152,19 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
                 </span>
                 <span className="min-w-0 flex-1">
                   <span
-                    className={`block text-sm ${
+                    className={`block text-body ${
                       item.status === "ok" ? "text-ink-soft line-through" : "text-ink"
                     }`}
                   >
                     {item.text}
                   </span>
-                  {item.note && <span className="block text-xs text-ink-soft">{item.note}</span>}
+                  {item.note && <span className="block text-micro text-ink-soft">{item.note}</span>}
                   {item.date && (
                     <span
-                      className="mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-                      style={{ backgroundColor: "var(--color-info)" }}
+                      className="chip mt-1"
+                      style={{ "--chip": "var(--info)" } as React.CSSProperties}
                     >
-                      {formatarData(item.date)}
+                      📅 {formatarData(item.date)}
                     </span>
                   )}
                 </span>
@@ -172,12 +173,16 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
           ))}
         </ul>
 
+        <div className="flex items-center justify-end">
+          <VerNoChat obraId={obraId} eventoId={ehChecklist ? (payload.sourceEventId ?? evento.id) : evento.id} />
+        </div>
+
         <div className="flex gap-2 border-t border-line pt-3">
           <button
             type="button"
             onClick={concluirTudo}
             disabled={carregando || tudoFeito}
-            className="flex-1 rounded-card border border-done px-3 py-2 text-xs font-semibold text-done disabled:opacity-40"
+            className="flex-1 rounded-card border border-done px-3 py-2.5 font-display text-caption font-semibold text-done disabled:opacity-40"
           >
             {tudoFeito ? "Tudo feito" : "✓ Concluir tudo"}
           </button>
@@ -185,7 +190,7 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
             type="button"
             onClick={tirarDaLista}
             disabled={carregando}
-            className="flex-1 rounded-card border border-line px-3 py-2 text-xs font-semibold text-alert disabled:opacity-40"
+            className="flex-1 rounded-card border border-line px-3 py-2.5 font-display text-caption font-semibold text-alert disabled:opacity-40"
           >
             🗑 Tirar da lista
           </button>

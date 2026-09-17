@@ -41,9 +41,9 @@ export function SuggestionCard({
   }
 
   return (
-    <div className="max-w-[85%] space-y-2 rounded-card bg-primary-soft p-3">
-      <p className="text-[11px] text-ink-soft">{sugestao.gatilho}</p>
-      <p className="text-sm font-medium text-ink">{sugestao.proposta}</p>
+    <div className="max-w-[85%] space-y-2 rounded-card bg-primary-soft p-4">
+      <p className="text-micro text-ink-soft">{sugestao.gatilho}</p>
+      <p className="font-display text-body font-semibold text-ink">{sugestao.proposta}</p>
 
       {sugestao.entradaPagamento && (
         <div className="flex gap-2">

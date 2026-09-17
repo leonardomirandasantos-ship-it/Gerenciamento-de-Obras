@@ -1,11 +1,9 @@
 import { COR_TIPO, RÓTULO_TIPO, type EventoKind } from "@/lib/types";
 
+/** Chip do styleguide: fundo tingido + texto na cor, nunca preenchimento sólido. */
 export function ChipTipo({ kind }: { kind: EventoKind }) {
   return (
-    <span
-      className="inline-block shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-      style={{ backgroundColor: COR_TIPO[kind] }}
-    >
+    <span className="chip" style={{ "--chip": COR_TIPO[kind] } as React.CSSProperties}>
       {RÓTULO_TIPO[kind]}
     </span>
   );

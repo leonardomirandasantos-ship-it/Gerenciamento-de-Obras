@@ -69,7 +69,7 @@ export default async function ResumoPage({
           <Link
             key={cartao.rotulo}
             href={cartao.href}
-            className="rounded-card border border-line bg-surface p-3"
+            className="rounded-card bg-surface shadow-card p-3"
           >
             <p className="text-xs text-ink-soft">{cartao.rotulo}</p>
             <p className="font-display text-lg font-bold text-ink">

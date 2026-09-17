@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { TOKENS } from "@/lib/tokens";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -8,11 +9,27 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#F4F1EA",
-    theme_color: "#1F5C57",
+    background_color: TOKENS.bgPaper,
+    theme_color: TOKENS.primary,
     icons: [
-      { src: "/icones/192", sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: "/icones/512", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      {
+        src: "/assets/logo/app-icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/assets/logo/app-icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/assets/logo/app-icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
     ],
   };
 }

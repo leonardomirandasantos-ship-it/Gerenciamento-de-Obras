@@ -81,7 +81,7 @@ export default async function PendenciasPage({
   }
 
   return (
-    <div className="flex-1 space-y-6 overflow-y-auto p-4">
+    <div className="flex-1 space-y-6 overflow-y-auto p-4 pb-28">
       {(comPrazo.length > 0 || itensComPrazo.length > 0) && (
         <section className="space-y-2">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-soft">

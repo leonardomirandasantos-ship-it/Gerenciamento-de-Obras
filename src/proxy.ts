@@ -46,6 +46,9 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Fora da autenticação: estáticos, os assets de marca/tokens e o manifest
+    // — o sistema operacional busca o manifest antes de existir sessão, e sem
+    // isso o "adicionar à tela de início" não pega o ícone.
+    "/((?!_next/static|_next/image|assets/|icon.png|manifest.webmanifest|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|css|ico|woff2?)$).*)",
   ],
 };

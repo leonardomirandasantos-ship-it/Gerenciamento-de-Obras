@@ -39,12 +39,12 @@ export default async function PrestadorPage({
     ((fases ?? []) as Fase[]).find((fase) => fase.id === faseId)?.name ?? null;
 
   return (
-    <div className="flex-1 space-y-4 overflow-y-auto p-4">
+    <div className="flex-1 space-y-4 overflow-y-auto p-4 pb-28">
       <Link href={`/obras/${id}/dash`} className="text-xs text-ink-soft underline">
         ← voltar ao dash
       </Link>
 
-      <section className="space-y-2 rounded-card border border-line bg-surface p-4">
+      <section className="space-y-2 rounded-card bg-surface shadow-card p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft font-display text-lg font-bold text-primary">
             {pessoa.nome.charAt(0).toUpperCase()}
@@ -91,7 +91,7 @@ export default async function PrestadorPage({
               return (
                 <li
                   key={evento.id}
-                  className="flex items-start gap-3 rounded-card border border-line bg-surface p-3"
+                  className="flex items-start gap-3 rounded-card bg-surface shadow-card p-3"
                 >
                   {comprovante ? (
                     <a href={comprovante.url} target="_blank" rel="noreferrer" className="shrink-0">

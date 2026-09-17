@@ -1,4 +1,4 @@
-# 03 — Decisões (Decision Log D1–D47) + Escopo V1/V2
+# 03 — Decisões (Decision Log D1–D85) + Escopo V1/V2
 
 > **Este arquivo é normativo.** Em caso de ambiguidade na implementação, estas
 > decisões têm prioridade. Cada decisão nasceu do refinamento de produto e/ou da
@@ -16,7 +16,7 @@
 | D3 | Nada é descartado (inclui "não classificado") | ✅ |
 | D4 | Comprovante: junto OU anexado depois | ✅ |
 | D5 | Comprovante/NF também no gasto (evidência) | ✅ |
-| D6 | Chat é a única superfície de captura; dashboards só leem | ✅ |
+| D6 | Chat é a única superfície de captura; dashboards só leem. O atalho "+" da lente não abre exceção: ele escreve na conversa (ver D79) | ✅ |
 | D7 | Não congelar fluxos/design antes da análise do export (feito depois) | ✅ |
 | D8 | 4º tipo (atualização/documentação) capturado na V1 | ✅ |
 
@@ -27,7 +27,7 @@
 | D10 | Reembolso tem 2 tempos (marcar + baixa) — **movido para V2** (ver D41) | ↪️ V2 |
 | D11 | Pendências com prazo formam calendário emergente | ✅ |
 | D12 | "Fechar o dia" entra na V1 como lente leve | 🟡 |
-| D13 | Toda lente só LÊ eventos; captura exclusiva do chat | ✅ |
+| D13 | Toda lente só LÊ eventos — nenhuma lente cria registro próprio. O atalho de captura da lente grava na conversa e a lente lê de lá (ver D79) | ✅ |
 
 ### Pós-análise do export real (pivô logística-first)
 | # | Decisão | Status |
@@ -160,6 +160,13 @@ objetivo de **testar o conceito**. Caminhos (do mais simples ao mais rico):
 | D76 | **Lista e checklist são o MESMO card, numa seção só.** Separar em "Listas recebidas" e "Checklists" fazia o card sumir do lugar ao ser convertido e reaparecer no fim da página — com várias listas, parecia que "criou a primeira e parou de criar" (os checklists estavam sendo criados, só fora da tela). Agora o card converte no lugar, mantendo posição e ordenação pela data da lista de origem | ✅ |
 | D77 | **Card tem ação de conjunto além do item:** "✓ Concluir tudo" e "🗑 Tirar da lista", sem tirar o checkbox por item | ✅ |
 | D78 | **"Tirar da lista" remove das pendências, não apaga a mensagem** (marca `dismissed`): a conversa continua sendo o registro, e nada que ela mandou se perde (D3) | ✅ |
+| D79 | **Atalho de captura nas lentes ("+"), nunca um caminho paralelo.** O FAB da lente NÃO grava um registro próprio: abre o bottom sheet e escreve **uma mensagem na conversa**, já com o tipo declarado (`edited: true`, para não reabrir a sugestão de classificação). A lente continua só lendo (D13) e a conversa continua sendo o arquivo master (D6). Tipo por aba: Pendências→E1, Dash e Prestador→E7 (com valor/favorecido), Decisões→E3, Documentação→E4, Orçamentos→E8. Não aparece na Conversa (o composer já está ali) nem nas Configurações | ✅ |
+| D80 | **Tokens do `tokens.css` são a fonte única de cor/raio/sombra/tipografia.** O `globals.css` importa o arquivo e o `@theme` do Tailwind só faz a ponte (`--color-primary: var(--primary)`). Onde CSS não chega — manifest do PWA (JSON), `theme-color` (lida antes do CSS) e cores de fase gravadas no banco — existe **um** espelho declarado, `src/lib/tokens.ts`, e nenhum outro hex no código | ✅ |
+| D81 | **Logo nunca é recriado.** Vem sempre dos PNGs de `public/assets/logo/`: horizontal no login, mascote nos empty states e como avatar de obra sem foto, app-icon no manifest e como ícone do app. A rota que desenhava um "Z" em `ImageResponse` foi removida. Pendência de asset: o `logo-horizontal.png` tem fundo opaco (~#F9F7F3), diferente do `--bg-paper`, então vai como placa arredondada — uma versão com fundo transparente resolveria | ✅ |
+| D82 | **Microfone existe como desenho antes de funcionar.** O botão fica no composer e, ao ser tocado, avisa que áudio está em construção (D56 ainda aberto). Melhor mostrar o caminho e assumir que falta do que esconder a intenção do produto | ✅ |
+| D83 | **Toda lente tem "ver no chat"** levando à mensagem que originou o registro (`#evento-<id>`). Sem isso a lente é beco sem saída: você vê o dado e não acha onde ele nasceu | ✅ |
+| D84 | **Manifest, ícones e assets de marca ficam fora do gate de autenticação.** O sistema operacional busca o manifest antes de existir sessão; com ele atrás do login, "adicionar à tela de início" não pegava o ícone | ✅ |
+| D85 | **Divergências de mockup resolvidas a favor do texto** (regra do `09_ASSETS §3`): o Dash mantém as abas do D45 em vez da pílula "Resumo" do mockup; decisão só mostra miniatura quando veio com foto (a maioria é texto puro, e um quadrado cinza fixo é pior); prestador/fornecedor usa inicial, porque não existe campo de foto no modelo | ✅ |
 | D71 | **Bottom sheet fecha arrastando para baixo** pela alça, além do toque fora e do ✕. O arraste fica restrito à alça/título para não brigar com o scroll do conteúdo | ✅ |
 | D72 | **Excluir por arrasto tem duas etapas:** arrastar pouco trava o card aberto com o botão "Excluir" (precisa confirmar); arrastar até o fim joga fora direto. Um gesto só apagava registro sem querer, que é o erro mais caro aqui. O ponteiro só é capturado depois que o gesto vira arrasto horizontal — capturar no toque impedia clicar nos itens dentro do card | ✅ |
 | D73 | **Excluir checklist religa a lista de origem.** O checklist guarda `sourceEventId`; ao excluir, o vínculo da lista é limpo. Sem isso a lista sumia das duas seções (apontava para um checklist inexistente) e não dava mais para recriar — bug encontrado em teste de uso | ✅ |

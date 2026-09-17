@@ -48,8 +48,8 @@ export default async function DashPage({ params }: { params: Promise<{ id: strin
   const maiorGasto = porPessoa[0]?.total ?? 0;
 
   return (
-    <div className="flex-1 space-y-4 overflow-y-auto p-4">
-      <section className="space-y-3 rounded-card border border-line bg-surface p-4">
+    <div className="flex-1 space-y-4 overflow-y-auto p-4 pb-28">
+      <section className="space-y-3 rounded-card bg-surface shadow-card p-4">
         <div>
           <p className="text-xs text-ink-soft">Gasto total da obra</p>
           <p className="font-display text-2xl font-bold text-ink">{formatarReais(total)}</p>
@@ -57,7 +57,7 @@ export default async function DashPage({ params }: { params: Promise<{ id: strin
         <RoscaPorFase fatias={fatias} />
       </section>
 
-      <section className="space-y-3 rounded-card border border-line bg-surface p-4">
+      <section className="space-y-3 rounded-card bg-surface shadow-card p-4">
         <h2 className="text-sm font-semibold text-ink">Gasto por prestador/fornecedor</h2>
 
         {porPessoa.length === 0 ? (
@@ -98,14 +98,14 @@ export default async function DashPage({ params }: { params: Promise<{ id: strin
       </section>
 
       {pagamentos.length > 0 && (
-        <section className="space-y-3 rounded-card border border-line bg-surface p-4">
+        <section className="space-y-3 rounded-card bg-surface shadow-card p-4">
           <h2 className="text-sm font-semibold text-ink">Pagamentos registrados</h2>
-          <PagamentosEditaveis pagamentos={pagamentos} fases={(fases ?? []) as Fase[]} />
+          <PagamentosEditaveis obraId={id} pagamentos={pagamentos} fases={(fases ?? []) as Fase[]} />
         </section>
       )}
 
       <div className="flex gap-3">
-        <section className="flex flex-1 items-center justify-between rounded-card border border-line bg-surface p-4">
+        <section className="flex flex-1 items-center justify-between rounded-card bg-surface shadow-card p-4">
           <div>
             <p className="text-xs text-ink-soft">A comprar</p>
             <p className="font-display text-xl font-bold text-pending">{aComprar}</p>
@@ -115,7 +115,7 @@ export default async function DashPage({ params }: { params: Promise<{ id: strin
           </Link>
         </section>
 
-        <section className="flex flex-1 items-center justify-between rounded-card border border-line bg-surface p-4">
+        <section className="flex flex-1 items-center justify-between rounded-card bg-surface shadow-card p-4">
           <div>
             <p className="text-xs text-ink-soft">Orçamentos</p>
             <p className="font-display text-xl font-bold text-ink">{orcamentos}</p>
@@ -127,7 +127,7 @@ export default async function DashPage({ params }: { params: Promise<{ id: strin
       </div>
 
       {fotosRecentes.length > 0 && (
-        <section className="space-y-3 rounded-card border border-line bg-surface p-4">
+        <section className="space-y-3 rounded-card bg-surface shadow-card p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-ink">Fotos recentes</h2>
             <Link href={`/obras/${id}/documentacao`} className="text-xs text-primary underline">

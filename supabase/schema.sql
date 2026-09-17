@@ -125,6 +125,8 @@ language plpgsql security definer
 set search_path = public
 as $$
 begin
+  -- Cores = tokens --phase-* de public/assets/tokens/tokens.css.
+  -- São valores gravados no banco, não estilo: se o token mudar, migrar aqui.
   insert into fases (obra_id, name, color, "order", is_default) values
     (new.id, 'Fundação', '#9B6A43', 0, true),
     (new.id, 'Estrutura', '#1F5C57', 1, true),
