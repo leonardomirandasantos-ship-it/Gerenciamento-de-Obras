@@ -4,18 +4,25 @@ import { useState } from "react";
 import { EventBubble } from "./EventBubble";
 import { ComposerInput } from "./ComposerInput";
 import { EditBottomSheet } from "./EditBottomSheet";
+import { SuggestionCard } from "./SuggestionCard";
+import type { Sugestao } from "@/lib/suggestions";
 import type { Evento, Fase } from "@/lib/types";
 
 export function ConversaClient({
   obraId,
   eventos,
   fases,
+  sugestoes,
 }: {
   obraId: string;
   eventos: Evento[];
   fases: Fase[];
+  sugestoes: Sugestao[];
 }) {
   const [editando, setEditando] = useState<Evento | null>(null);
+
+  // Anti-irritação (D25): no máximo 1 destaque por superfície, nunca empilhar.
+  const sugestaoAtiva = sugestoes.length > 0 ? sugestoes[sugestoes.length - 1] : null;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -35,8 +42,11 @@ export function ConversaClient({
       ) : (
         <ul className="flex-1 space-y-3 overflow-y-auto p-4">
           {eventos.map((evento) => (
-            <li key={evento.id}>
+            <li key={evento.id} id={`evento-${evento.id}`} className="space-y-2">
               <EventBubble evento={evento} onEditar={() => setEditando(evento)} />
+              {sugestaoAtiva?.eventoId === evento.id && (
+                <SuggestionCard sugestao={sugestaoAtiva} evento={evento} obraId={obraId} />
+              )}
             </li>
           ))}
         </ul>

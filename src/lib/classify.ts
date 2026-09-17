@@ -15,7 +15,8 @@ export type ResultadoClassificacao = {
 
 const REGEX_PAGAMENTO = /\br\$|\bpix\b|comprovante|\bpago\b|\bpagamento\b/i;
 const REGEX_ORCAMENTO = /or[çc]amento/i;
-const REGEX_DECISAO = /\bcor\b|\bmedida\b|\bmodelo\b|escolh(i|emos)|especifica[çc][ãa]o/i;
+const REGEX_DECISAO =
+  /\bcor\b|\bmedida\b|\bmodelo\b|escolh(i|emos)|especifica[çc][ãa]o|porcelanato|rejunte|revestimento|acabamento|\btinta\b|\blou[çc]a\b|\bmetais\b|\bbancada\b/i;
 const REGEX_LISTA_MATERIAL = /\bcomprar\b|\bcota[çc][ãa]o\b|\d+\s*(m³|kg|k\.|barras?|sacos?|cx|rolos?|metros?|m\b)/i;
 
 /**
@@ -50,12 +51,18 @@ export function classificar(entrada: EntradaClassificacao): ResultadoClassificac
     return { kind: "E7_pagamento", confidence: 0.75 };
   }
 
+  // Multi-linha é o sinal mais forte do uso real (~40% do texto são listas),
+  // então lista ganha de decisão quando há várias linhas.
+  if (linhas.length >= 3) {
+    return { kind: "E1_lista", confidence: 0.75 };
+  }
+
   if (REGEX_DECISAO.test(texto)) {
     return { kind: "E3_decisao", confidence: 0.6 };
   }
 
-  if (linhas.length >= 3 || REGEX_LISTA_MATERIAL.test(texto)) {
-    return { kind: "E1_lista", confidence: linhas.length >= 3 ? 0.75 : 0.6 };
+  if (REGEX_LISTA_MATERIAL.test(texto)) {
+    return { kind: "E1_lista", confidence: 0.6 };
   }
 
   if (texto.length > 200) {

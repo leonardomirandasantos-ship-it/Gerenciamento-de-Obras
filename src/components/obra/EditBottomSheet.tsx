@@ -26,16 +26,29 @@ export function EditBottomSheet({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const pagamentoAtual = evento.payload as { amount?: number; payeeName?: string };
   const [kind, setKind] = useState<EventoKind>(evento.kind);
   const [phaseId, setPhaseId] = useState(evento.phase_id ?? "");
+  const [valor, setValor] = useState(pagamentoAtual.amount?.toString() ?? "");
+  const [favorecido, setFavorecido] = useState(pagamentoAtual.payeeName ?? "");
   const [carregando, setCarregando] = useState(false);
 
   async function salvar() {
     setCarregando(true);
     const supabase = createClient();
+
+    const payload =
+      kind === "E7_pagamento"
+        ? {
+            ...evento.payload,
+            amount: valor ? parseFloat(valor.replace(",", ".")) : undefined,
+            payeeName: favorecido || undefined,
+          }
+        : evento.payload;
+
     await supabase
       .from("eventos")
-      .update({ kind, confidence: 1, phase_id: phaseId || null, edited: true })
+      .update({ kind, confidence: 1, phase_id: phaseId || null, payload, edited: true })
       .eq("id", evento.id);
     setCarregando(false);
     onClose();
@@ -81,6 +94,29 @@ export function EditBottomSheet({
             </button>
           ))}
         </div>
+
+        {kind === "E7_pagamento" && (
+          <div className="mb-4 flex gap-2">
+            <div className="w-28 space-y-1">
+              <label className="text-xs font-medium text-ink-soft">Valor (R$)</label>
+              <input
+                inputMode="decimal"
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+                className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+              />
+            </div>
+            <div className="flex-1 space-y-1">
+              <label className="text-xs font-medium text-ink-soft">Favorecido</label>
+              <input
+                value={favorecido}
+                onChange={(e) => setFavorecido(e.target.value)}
+                placeholder="Quem recebeu"
+                className="w-full rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+              />
+            </div>
+          </div>
+        )}
 
         <p className="mb-2 text-sm font-medium text-ink">Fase</p>
         <select

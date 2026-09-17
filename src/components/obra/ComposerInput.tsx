@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { classificar } from "@/lib/classify";
+import { extrairDadosPagamento } from "@/lib/pagamento";
 import type { AnexoTipo } from "@/lib/types";
 
 function tipoDoArquivo(file: File): AnexoTipo {
@@ -40,6 +41,7 @@ export function ComposerInput({ obraId }: { obraId: string }) {
       kind,
       confidence,
       raw_text: conteudo,
+      payload: kind === "E7_pagamento" ? extrairDadosPagamento(conteudo) : {},
     });
 
     setEnviando(false);
@@ -60,8 +62,9 @@ export function ComposerInput({ obraId }: { obraId: string }) {
 
     for (const file of Array.from(files)) {
       const tipo = tipoDoArquivo(file);
+      // O nome do arquivo entra na classificação: "Orçamento 335396.pdf" → E8.
       const { kind, confidence } = classificar({
-        texto: "",
+        texto: file.name,
         temFoto: tipo === "foto",
         temVideo: tipo === "video",
         temPdf: tipo === "pdf",
@@ -74,7 +77,7 @@ export function ComposerInput({ obraId }: { obraId: string }) {
 
       const { data: evento } = await supabase
         .from("eventos")
-        .insert({ obra_id: obraId, kind, confidence })
+        .insert({ obra_id: obraId, kind, confidence, payload: { fileName: file.name } })
         .select("id")
         .single();
 

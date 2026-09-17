@@ -11,6 +11,51 @@ export type EventoKind =
 
 export type AnexoTipo = "foto" | "video" | "pdf" | "audio";
 
+export type ChecklistItem = {
+  text: string;
+  status: "falta" | "ok";
+  note?: string;
+  date?: string;
+};
+
+export type ChecklistPayload = {
+  title?: string;
+  sourceListDate?: string;
+  items: ChecklistItem[];
+  statusHistory?: { at: string; fromEventId?: string; changed: number }[];
+};
+
+export type ListaPayload = {
+  items?: string[];
+  linkedChecklistId?: string;
+};
+
+export type DecisaoPayload = {
+  title?: string;
+  value?: string;
+  environment?: string;
+};
+
+export type CasoSugestao =
+  | "A_checklist"
+  | "B_status"
+  | "C_data"
+  | "D_decisao"
+  | "E_prestador"
+  | "G_fechar_dia";
+
+export type EstadoSugestao = "detected" | "offered" | "accepted" | "ignored" | "silenced";
+
+export type SugestaoRegistro = {
+  id: string;
+  obra_id: string;
+  evento_id: string | null;
+  caso: CasoSugestao;
+  estado: EstadoSugestao;
+  trigger_desc: string | null;
+  proposta: string | null;
+};
+
 export type Anexo = {
   id: string;
   evento_id: string;
