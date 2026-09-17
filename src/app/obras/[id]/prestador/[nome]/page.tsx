@@ -11,6 +11,7 @@ import {
 } from "@/lib/pagamento";
 import { EditarFavorecido } from "@/components/obra/EditarFavorecido";
 import { BotaoEditarRegistro } from "@/components/obra/BotaoEditarRegistro";
+import { BotaoEncaminhar } from "@/components/obra/BotaoEncaminhar";
 import type { Fase } from "@/lib/types";
 
 export default async function PrestadorPage({
@@ -147,6 +148,14 @@ export default async function PrestadorPage({
                       >
                         ver no chat
                       </Link>
+                      {/* Encaminhar o comprovante é o motivo mais comum de
+                          voltar nesta tela (D137). */}
+                      {(evento.anexos ?? []).length > 0 && (
+                        <BotaoEncaminhar
+                          anexos={evento.anexos ?? []}
+                          descricao={`Comprovante — ${formatarReais(payload.amount ?? 0)} para ${pessoa.nome}`}
+                        />
+                      )}
                     </div>
                   </div>
                 </li>

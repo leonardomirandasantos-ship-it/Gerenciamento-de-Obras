@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { BotaoEncaminhar } from "./BotaoEncaminhar";
 import type { Evento, Fase } from "@/lib/types";
 
 type FotoItem = {
@@ -65,6 +66,15 @@ function VisorFoto({
         </button>
         <span className="text-xs opacity-80">
           {new Date(foto.evento.received_at).toLocaleString("pt-BR")}
+        </span>
+        {/* Mandar a foto da obra para o cliente é o mesmo gesto do
+            comprovante para o pedreiro (D137). */}
+        <span className="[&_button]:text-white [&_button]:opacity-80">
+          <BotaoEncaminhar
+            anexos={foto.evento.anexos ?? []}
+            descricao={foto.evento.caption ?? undefined}
+            rotulo="mandar"
+          />
         </span>
         <Link
           href={`/obras/${obraId}/conversa#evento-${foto.evento.id}`}

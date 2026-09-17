@@ -3,6 +3,7 @@
 import { progressoChecklist } from "@/lib/checklist";
 import { formatarDuracao } from "@/lib/audio";
 import { ChipTipo } from "./ChipTipo";
+import { BotaoEncaminhar } from "./BotaoEncaminhar";
 import type { AudioPayload, ChecklistPayload, DecisaoPayload, Evento } from "@/lib/types";
 
 function ConteudoChecklist({ evento }: { evento: Evento }) {
@@ -74,15 +75,34 @@ function ConteudoAudio({ evento }: { evento: Evento }) {
 
 export function EventBubble({ evento, onEditar }: { evento: Evento; onEditar: () => void }) {
   const prazo = (evento.payload as { date?: string }).date;
-  const vindoDeAudio = Boolean((evento.payload as { sourceAudioEventId?: string }).sourceAudioEventId);
+  const vindoDeAudio = Boolean(
+    (evento.payload as { sourceCaptureEventId?: string; sourceAudioEventId?: string })
+      .sourceCaptureEventId ??
+      (evento.payload as { sourceAudioEventId?: string }).sourceAudioEventId,
+  );
+
+  // Áudio não se encaminha: o valor está na transcrição, que já está no texto.
+  const temAnexo = (evento.anexos ?? []).some((anexo) => anexo.tipo !== "audio");
+
+  // Legenda pronta para o WhatsApp: poupa ela de digitar o valor de novo.
+  const pagamento = evento.payload as { amount?: number; payeeName?: string };
+  const legendaParaEncaminhar =
+    evento.kind === "E7_pagamento" && pagamento.amount !== undefined
+      ? `Comprovante — ${pagamento.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}${pagamento.payeeName ? ` para ${pagamento.payeeName}` : ""}`
+      : (evento.caption ?? undefined);
 
   return (
     <div className="flex max-w-[85%] flex-col gap-2 rounded-bubble rounded-tl-sm bg-surface p-3 shadow-card">
       <div className="flex items-center justify-between gap-2">
         <ChipTipo kind={evento.kind} />
-        <button type="button" onClick={onEditar} className="text-micro text-ink-soft underline">
-          editar
-        </button>
+        <span className="flex shrink-0 items-center gap-3">
+          {temAnexo && (
+            <BotaoEncaminhar anexos={evento.anexos ?? []} descricao={legendaParaEncaminhar} />
+          )}
+          <button type="button" onClick={onEditar} className="text-micro text-ink-soft underline">
+            editar
+          </button>
+        </span>
       </div>
 
       {evento.kind === "E9_audio" ? (
