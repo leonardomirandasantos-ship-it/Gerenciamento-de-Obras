@@ -45,8 +45,8 @@ export function ListaOrcamentos({ obraId, eventos }: { obraId: string; eventos: 
 
   return (
     <div className="flex-1 space-y-4 overflow-y-auto p-4 pb-28">
-      <Link href={`/obras/${obraId}/dash`} className="text-xs text-ink-soft underline">
-        ← voltar ao dash
+      <Link href={`/obras/${obraId}/resumo`} className="text-caption text-ink-soft underline">
+        ← voltar ao resumo
       </Link>
 
       <input

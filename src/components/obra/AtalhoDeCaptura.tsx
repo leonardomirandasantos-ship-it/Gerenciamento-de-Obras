@@ -26,7 +26,7 @@ const POR_ABA: Record<string, Atalho> = {
     titulo: "Nova lista",
     placeholder: "cimento\nareia\nvergalhão 10mm",
   },
-  dash: {
+  resumo: {
     kind: "E7_pagamento",
     titulo: "Registrar pagamento",
     placeholder: "paguei 1.250 para o José da caixa d'água",

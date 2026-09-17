@@ -26,7 +26,6 @@ const ICONES: Record<string, React.ReactNode> = {
       <path d="M5.6 8.2 7.3 9.9l3.2-3.6" />
     </>
   ),
-  dash: <path d="M3 13V7.4M8 13V3M13 13V9.6" />,
 };
 
 const ABAS = [
@@ -35,7 +34,6 @@ const ABAS = [
   { slug: "pendencias", label: "Pendências" },
   { slug: "documentacao", label: "Documentação" },
   { slug: "decisoes", label: "Decisões" },
-  { slug: "dash", label: "Dash" },
 ];
 
 function Icone({ slug }: { slug: string }) {

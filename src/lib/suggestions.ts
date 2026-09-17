@@ -175,7 +175,7 @@ export function detectarSugestoes(
           proposta: pagamento.amount === undefined
             ? "Quanto foi e pra quem?"
             : "Pra quem foi esse pagamento?",
-          porque: "Com valor e favorecido, ele entra no total por pessoa do dash.",
+          porque: "Com valor e favorecido, ele entra no total por pessoa do resumo.",
           acaoLabel: "Salvar",
           entradaPagamento: true,
           dados: { amount: pagamento.amount, payeeName: pagamento.payeeName },
@@ -219,7 +219,7 @@ export function detectarSugestoes(
         eventoId: evento.id,
         gatilho: "Não consegui identificar isso sozinho",
         proposta: "O que é esse registro?",
-        porque: "Classificando, ele aparece na aba certa (pendências, dash, decisões).",
+        porque: "Classificando, ele aparece na aba certa (resumo, pendências, decisões).",
         acaoLabel: "Classificar",
         opcoes: [
           { label: "Material", valor: "E1_lista" },

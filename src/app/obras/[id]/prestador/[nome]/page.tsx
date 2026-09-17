@@ -40,8 +40,8 @@ export default async function PrestadorPage({
 
   return (
     <div className="flex-1 space-y-4 overflow-y-auto p-4 pb-28">
-      <Link href={`/obras/${id}/dash`} className="text-xs text-ink-soft underline">
-        ← voltar ao dash
+      <Link href={`/obras/${id}/resumo`} className="text-caption text-ink-soft underline">
+        ← voltar ao resumo
       </Link>
 
       <section className="space-y-2 rounded-card bg-surface shadow-card p-4">

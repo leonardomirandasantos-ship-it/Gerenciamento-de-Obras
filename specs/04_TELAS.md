@@ -4,7 +4,10 @@
 > interações, anti-goals. Cores/tipos referenciam `05_DESIGN_SYSTEM.md`.
 >
 > **Padrão de navegação (D45):** dentro de uma obra, as lentes são **abas no
-> topo**: `Resumo · Conversa · Pendências · Documentação · Decisões · Dash`.
+> topo**: `Resumo · Conversa · Pendências · Documentação · Decisões`.
+>
+> **Atualização (D94):** Resumo e Dash foram fundidos. A "Tela 12 — Dash da obra"
+> descrita abaixo é hoje a aba **Resumo**; não existe mais tela de resumo separada.
 > **NÃO existe navbar inferior global.** Na Conversa, a barra inferior é o
 > **input do chat** (texto + anexar + voz + enviar).
 >
@@ -25,7 +28,7 @@
 9. Comprovante PIX (estado na conversa)
 10. Editar registro (bottom sheet)
 11. Decisões da obra
-12. Dash da obra
+12. Resumo da obra (visão geral; era "Dash")
 13. Prestador (deep-dive financeiro)
 14. Orçamentos
 15. Configurações da obra + Fases
@@ -75,7 +78,7 @@ observações); botão primário **Criar obra**.
 - Header: foto + nome da obra + **localização** (subtítulo); ícones busca, dash
   (atalho), menu "3 pontos".
 - **Abas no topo** (D45): Resumo · Conversa (ativa) · Pendências · Documentação ·
-  Decisões · Dash.
+  Decisões.
 - (Opcional) faixa fixada "Fase atual: Estrutura" com seta para trocar.
 - **Feed cronológico** de balões de evento (ordem enviada), cada um com **chip de
   tipo** (material/foto/lembrete/decisão/pagamento) e selo "não classificado"
@@ -184,7 +187,7 @@ chip "decisão", título (ex.: "Piso social"), valor (ex.: "Porcelanato bege
 
 ---
 
-## Tela 12 — Dash da obra
+## Tela 12 — Resumo da obra (era "Dash" — D94)
 **Objetivo:** lente que só LÊ os eventos; financeiro protagonista + logística. (D6, D13)
 **Estrutura (cards, scroll vertical):**
 - **Gasto total da obra** (valor grande) + **rosca por fase** com legenda e valores.

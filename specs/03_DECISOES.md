@@ -1,4 +1,4 @@
-# 03 — Decisões (Decision Log D1–D93) + Escopo V1/V2
+# 03 — Decisões (Decision Log D1–D94) + Escopo V1/V2
 
 > **Este arquivo é normativo.** Em caso de ambiguidade na implementação, estas
 > decisões têm prioridade. Cada decisão nasceu do refinamento de produto e/ou da
@@ -79,7 +79,7 @@
 ### Navegação e consistência visual (decisões tomadas vendo as telas)
 | # | Decisão | Status |
 |---|---------|--------|
-| D45 | **Sem navbar inferior global.** Cada obra é um "grupo"; lentes acessadas por **abas no topo** (Resumo · Conversa · Pendências · Documentação · Decisões · Dash). Preserva contexto por obra e o input do chat embaixo | ✅ |
+| D45 | **Sem navbar inferior global.** Cada obra é um "grupo"; lentes acessadas por **abas no topo** (Resumo · Conversa · Pendências · Documentação · Decisões — eram 6, ver D94). Preserva contexto por obra e o input do chat embaixo | ✅ |
 | D46 | **Bottom sheet reutilizável**: "Editar registro" é componente global; qualquer "editar" abre o mesmo sheet | ✅ |
 | D47 | Campo de **localização/cidade** na criação da obra (opcional) → alimenta o subtítulo do header ("Obra Ecologie · São Paulo, SP") | ✅ |
 
@@ -153,13 +153,14 @@ objetivo de **testar o conceito**. Caminhos (do mais simples ao mais rico):
 | D51 | **Limiar do checklist vivo (Caso B):** sugere fusão quando **2+ itens casam E ≥50% de sobreposição** (após normalizar acento, status e número). Conservador de propósito: erra pra menos, não pra mais | ✅ |
 | D52 | **Ordem de classificação:** texto com 3+ linhas é lista (sinal mais forte do uso real, ~40% do texto) e ganha de "decisão". O **nome do arquivo** entra na classificação (ex.: "Orçamento 335396.pdf" → E8) | ✅ |
 | D53 | **Excluir = soft delete** (`deleted = true`), nunca apaga fisicamente — mantém "toda ação é reversível". Exclusão **em lote** (D17) ainda não implementada | 🟡 |
-| D54 | **Orçamentos não tem aba própria** (as abas são as 6 do D45): é acessada pelo card no Dash | ✅ |
+| D54 | **Orçamentos não tem aba própria** (as abas são as do D45): é acessada pelo card no Resumo | ✅ |
 | D55 | **OCR de comprovante ainda não implementado.** Enquanto isso, o caminho é manual: editar o registro e informar valor + favorecido no bottom sheet. Pagamento por **texto** ("pix de R$ 1.250 pro José Costa") já é extraído automaticamente. Decisão pendente com o dono: adotar Tesseract.js (custo: ~10MB baixados no 1º uso, roda no celular) ou esperar | 🟡 |
 | D56 | **Captura de voz ainda não implementada** (D19 já era 🟡): o input aceita texto e anexos (foto/vídeo/PDF) | 🟡 |
 | D57 | **Tema único, sem dark mode.** O template inicial invertia as cores pelo `prefers-color-scheme` e quebrava o contraste dos botões; agora a paleta do `05` vale sempre | ✅ |
 | D76 | **Lista e checklist são o MESMO card, numa seção só.** Separar em "Listas recebidas" e "Checklists" fazia o card sumir do lugar ao ser convertido e reaparecer no fim da página — com várias listas, parecia que "criou a primeira e parou de criar" (os checklists estavam sendo criados, só fora da tela). Agora o card converte no lugar, mantendo posição e ordenação pela data da lista de origem | ✅ |
 | D77 | **Card tem ação de conjunto além do item:** "✓ Concluir tudo" e "🗑 Tirar da lista", sem tirar o checkbox por item | ✅ |
 | D78 | **"Tirar da lista" remove das pendências, não apaga a mensagem** (marca `dismissed`): a conversa continua sendo o registro, e nada que ela mandou se perde (D3) | ✅ |
+| D94 | **Resumo e Dash fundidos numa aba só, chamada "Resumo".** O Resumo era um Dash pior: dos seus 4 contadores, 3 (gasto, a comprar, fotos) já existiam melhor no Dash, e o quarto ("loops abertos") duplicava as sugestões de Pendências. Contador que só serve de atalho para outra aba não paga seu espaço quando as abas estão no topo, a um toque. Fica o conteúdo do Dash + "Últimos registros" (a única coisa que o Resumo tinha de próprio). Bônus: 5 abas cabem na tela do celular, 6 não cabiam. A rota `/dash` vira redirecionamento permanente para não quebrar link salvo | ✅ |
 | D86 | **Tempo do verbo separa pagamento de lista.** "comprei/compramos/gastei/quitei/acertei" é dinheiro que já saiu (E7); "comprar" no infinitivo continua sendo item de lista (E1). Sem isso, "comprei 200 de tijolo na construção Bom Lar" virava material e nunca chegava no dash. Trava junto: número seguido de unidade é **quantidade, não valor** ("comprei 3 sacos de cimento" não são R$ 3) | ✅ |
 | D87 | **Favorecido também sai do lugar da compra.** Além de "para/pro/pra <nome>", lê "na/no/em <estabelecimento>" — mas só quando a preposição forte não achou nada, e com stoplist de lugar/tempo ("na obra", "na sexta"). Fornecedor de balcão é tão favorecido quanto prestador | ✅ |
 | D88 | **Acabou a sugestão "transformar essa lista em checklist".** Desde o D74/D76 a lista já é marcável item a item e converte no primeiro toque — perguntar de novo era o app pedindo permissão para algo que já estava feito. A fusão de status (B_status) fica, porque essa sim é uma decisão real | ✅ |
