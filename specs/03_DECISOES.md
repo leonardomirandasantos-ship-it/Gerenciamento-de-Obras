@@ -1,4 +1,4 @@
-# 03 — Decisões (Decision Log D1–D101) + Escopo V1/V2
+# 03 — Decisões (Decision Log D1–D103) + Escopo V1/V2
 
 > **Este arquivo é normativo.** Em caso de ambiguidade na implementação, estas
 > decisões têm prioridade. Cada decisão nasceu do refinamento de produto e/ou da
@@ -160,6 +160,8 @@ objetivo de **testar o conceito**. Caminhos (do mais simples ao mais rico):
 | D76 | **Lista e checklist são o MESMO card, numa seção só.** Separar em "Listas recebidas" e "Checklists" fazia o card sumir do lugar ao ser convertido e reaparecer no fim da página — com várias listas, parecia que "criou a primeira e parou de criar" (os checklists estavam sendo criados, só fora da tela). Agora o card converte no lugar, mantendo posição e ordenação pela data da lista de origem | ✅ |
 | D77 | **Card tem ação de conjunto além do item:** "✓ Concluir tudo" e "🗑 Tirar da lista", sem tirar o checkbox por item | ✅ |
 | D78 | **"Tirar da lista" remove das pendências, não apaga a mensagem** (marca `dismissed`): a conversa continua sendo o registro, e nada que ela mandou se perde (D3) | ✅ |
+| D102 | **Chave de arquivo no Storage é higienizada; nome real fica no payload.** O Supabase recusa chave com acento, "º" e espaço — em português isso é a regra ("Orçamento nº 335396.pdf"), e o upload falhava **em silêncio**, sem anexo e sem aviso. Agora a chave vai sem acento e o `payload.fileName` guarda o nome de verdade para exibição. Junto: anexo que não sobe passa a avisar na tela em vez de sumir | ✅ |
+| D103 | **Conta de QA populada por script** (`scripts/semear-qa.ts`), com a amostra real do export: duas obras (uma arquivada), fotos por fase, orçamento em PDF, checklist em andamento, pagamentos com prestador, fornecedor e sem tipo, e uma decisão com ambiente inventado. Testar deixa de exigir digitar tudo à mão. Credenciais nunca entram no repositório — vão por argumento | ✅ |
 | D95 | **Arquivar tira da lista do dia a dia, não do app.** A obra arquivada sumia por completo — mas cliente antigo volta a perguntar coisa, e o histórico é justamente o valor do produto. A home ganhou uma seção "Arquivadas" recolhida, a obra continua abrindo normalmente (com selo no header) e as Configurações têm "Reativar obra" | ✅ |
 | D96 | **O header inteiro da obra leva às Configurações** — foto, nome e ⋮ são o mesmo destino. Alvo de 44px escondido atrás de três pontinhos é alvo que ninguém acha no celular | ✅ |
 | D97 | **A conversa abre na mensagem mais recente**, como qualquer chat, com botão "↓" quando ela sobe no histórico. Abria na mensagem mais antiga, obrigando a rolar a obra inteira. Exceção: chegando por "ver no chat", o alvo é a mensagem do link, não o fim | ✅ |

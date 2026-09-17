@@ -1,4 +1,5 @@
 import { createClient } from "./supabase/client";
+import { chaveSegura } from "./arquivos";
 import { classificar } from "./classify";
 import { extrairDadosPagamento } from "./pagamento";
 import type { AnexoTipo, EventoKind } from "./types";
@@ -66,6 +67,7 @@ export async function capturarTexto({
   });
 }
 
+/** Devolve os nomes que não subiram, para a tela poder avisar (D102). */
 export async function capturarArquivos({
   obraId,
   arquivos,
@@ -76,13 +78,15 @@ export async function capturarArquivos({
   arquivos: File[];
   faseAtualId: string | null;
   kind?: EventoKind;
-}) {
+}): Promise<{ falhas: string[] }> {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return;
+  if (!user) return { falhas: arquivos.map((file) => file.name) };
+
+  const falhas: string[] = [];
 
   for (const file of arquivos) {
     const tipo = tipoDoArquivo(file);
@@ -95,9 +99,12 @@ export async function capturarArquivos({
       temAudio: tipo === "audio",
     });
 
-    const path = `${user.id}/${obraId}/${Date.now()}-${file.name}`;
+    const path = `${user.id}/${obraId}/${Date.now()}-${chaveSegura(file.name)}`;
     const { error: erroUpload } = await supabase.storage.from("anexos").upload(path, file);
-    if (erroUpload) continue;
+    if (erroUpload) {
+      falhas.push(file.name);
+      continue;
+    }
 
     const { data: evento } = await supabase
       .from("eventos")
@@ -114,6 +121,10 @@ export async function capturarArquivos({
 
     if (evento) {
       await supabase.from("anexos").insert({ evento_id: evento.id, url: path, tipo });
+    } else {
+      falhas.push(file.name);
     }
   }
+
+  return { falhas };
 }

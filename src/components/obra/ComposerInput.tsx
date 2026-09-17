@@ -18,6 +18,7 @@ export function ComposerInput({
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [avisoAudio, setAvisoAudio] = useState(false);
+  const [falhas, setFalhas] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function enviarTexto() {
@@ -50,13 +51,25 @@ export function ComposerInput({
     }
 
     setEnviando(true);
-    await capturarArquivos({ obraId, arquivos: lista, faseAtualId });
+    setFalhas([]);
+    const { falhas: naoSubiram } = await capturarArquivos({
+      obraId,
+      arquivos: lista,
+      faseAtualId,
+    });
+    setFalhas(naoSubiram);
     setEnviando(false);
     router.refresh();
   }
 
   return (
     <div className="safe-bottom bg-surface px-3 pt-3">
+      {falhas.length > 0 && (
+        <p className="mb-2 rounded-card border border-alert px-3 py-2 text-micro text-alert">
+          Não consegui enviar: {falhas.join(", ")}. Tenta de novo?
+        </p>
+      )}
+
       {avisoAudio && (
         <p className="mb-2 rounded-card bg-primary-soft px-3 py-2 text-micro text-ink-soft">
           🎙️ Áudio ainda está em construção. Por enquanto, manda por texto ou foto.

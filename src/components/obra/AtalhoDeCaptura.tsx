@@ -74,6 +74,7 @@ export function AtalhoDeCaptura({
   const [ambientes, setAmbientes] = useState<string[]>([]);
   const [ambientesConhecidos, setAmbientesConhecidos] = useState<string[]>(AMBIENTES);
   const [salvando, setSalvando] = useState(false);
+  const [erroDeEnvio, setErroDeEnvio] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const aba = pathname.split("/")[3] ?? "";
@@ -144,7 +145,7 @@ export function AtalhoDeCaptura({
 
   async function enviarArquivos(lista: FileList) {
     setSalvando(true);
-    await capturarArquivos({
+    const { falhas } = await capturarArquivos({
       obraId,
       arquivos: Array.from(lista),
       faseAtualId,
@@ -152,11 +153,22 @@ export function AtalhoDeCaptura({
     });
     setSalvando(false);
     fechar();
+
+    if (falhas.length > 0) {
+      setErroDeEnvio(`Não consegui enviar: ${falhas.join(", ")}`);
+      setTimeout(() => setErroDeEnvio(null), 5000);
+    }
     router.refresh();
   }
 
   return (
     <>
+      {erroDeEnvio && (
+        <p className="safe-bottom fixed inset-x-4 bottom-0 z-40 rounded-card border border-alert bg-surface px-3 py-2 text-micro text-alert shadow-card">
+          {erroDeEnvio}
+        </p>
+      )}
+
       <button
         type="button"
         onClick={() => (atalho.arquivo ? fileInputRef.current?.click() : abrirFolha())}

@@ -1,10 +1,11 @@
+import { chaveSegura } from "./arquivos";
 import type { createClient } from "./supabase/server";
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
 /** Onde a capa da obra mora no bucket privado (mesma raiz por usuário da RLS). */
 export function caminhoDaCapa(userId: string, obraId: string, nomeArquivo: string): string {
-  return `${userId}/obras/${obraId}/capa-${Date.now()}-${nomeArquivo}`;
+  return `${userId}/obras/${obraId}/capa-${Date.now()}-${chaveSegura(nomeArquivo)}`;
 }
 
 /**
