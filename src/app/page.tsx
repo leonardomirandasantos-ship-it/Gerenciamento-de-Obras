@@ -3,6 +3,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { assinarCapas, urlDaCapa } from "@/lib/fotoObra";
 import { LogoutButton } from "@/components/LogoutButton";
+import { AcoesDaObra } from "@/components/AcoesDaObra";
 
 type ObraDaLista = {
   id: string;
@@ -15,36 +16,45 @@ type ObraDaLista = {
 
 function CartaoDeObra({ obra, capa }: { obra: ObraDaLista; capa: string | null }) {
   const fase = Array.isArray(obra.fases) ? obra.fases[0] : obra.fases;
+  const arquivada = obra.status === "archived";
 
+  // A engrenagem fica FORA do link da obra: link dentro de link não vale em
+  // HTML, e o toque acabaria abrindo a conversa em vez das configurações.
   return (
-    <Link
-      href={`/obras/${obra.id}/conversa`}
-      className="flex items-center gap-3 rounded-card bg-surface p-3 shadow-card active:bg-surface-alt"
-    >
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-soft">
-        {capa ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={capa} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <Image
-            src="/assets/logo/mascote-192.png"
-            alt=""
-            width={192}
-            height={192}
-            className="h-9 w-9"
-          />
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-display font-bold text-ink">{obra.name}</p>
-        {obra.location && <p className="truncate text-micro text-ink-soft">{obra.location}</p>}
-      </div>
-      {fase && (
-        <span className="chip" style={{ "--chip": fase.color } as React.CSSProperties}>
-          {fase.name}
+    <div className="flex items-center gap-1 rounded-card bg-surface p-3 shadow-card">
+      <Link
+        href={`/obras/${obra.id}/conversa`}
+        className="-m-1 flex min-w-0 flex-1 items-center gap-3 rounded-card p-1 active:bg-surface-alt"
+      >
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-soft">
+          {capa ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={capa} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <Image
+              src="/assets/logo/mascote-192.png"
+              alt=""
+              width={192}
+              height={192}
+              className="h-9 w-9"
+            />
+          )}
         </span>
-      )}
-    </Link>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-display font-bold text-ink">{obra.name}</span>
+          {obra.location && (
+            <span className="block truncate text-micro text-ink-soft">{obra.location}</span>
+          )}
+        </span>
+        {fase && !arquivada && (
+          <span className="chip" style={{ "--chip": fase.color } as React.CSSProperties}>
+            {fase.name}
+          </span>
+        )}
+      </Link>
+
+      <AcoesDaObra obraId={obra.id} arquivada={arquivada} />
+    </div>
   );
 }
 

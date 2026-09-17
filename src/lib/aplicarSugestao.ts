@@ -3,13 +3,19 @@ import { fundirStatus, itensParaChecklist } from "./checklist";
 import type { Sugestao } from "./suggestions";
 import type { ChecklistPayload, Evento, ListaPayload } from "./types";
 
+/**
+ * Devolve o erro em vez de engolir (D119): quando o registro não grava, a
+ * sugestão volta na próxima renderização — foi assim que "agora não" ficou
+ * sem efeito por causa de um check constraint velho no banco, sem ninguém
+ * ver nada quebrar.
+ */
 async function registrar(
   sugestao: Sugestao,
   obraId: string,
   estado: "accepted" | "ignored",
-) {
+): Promise<{ erro: string | null }> {
   const supabase = createClient();
-  await supabase.from("sugestoes").insert({
+  const { error } = await supabase.from("sugestoes").insert({
     obra_id: obraId,
     evento_id: sugestao.eventoId,
     caso: sugestao.caso,
@@ -17,10 +23,11 @@ async function registrar(
     trigger_desc: sugestao.gatilho,
     proposta: sugestao.proposta,
   });
+  return { erro: error?.message ?? null };
 }
 
 export async function ignorarSugestao(sugestao: Sugestao, obraId: string) {
-  await registrar(sugestao, obraId, "ignored");
+  return registrar(sugestao, obraId, "ignored");
 }
 
 /**
@@ -191,5 +198,5 @@ export async function aplicarSugestao(
       .eq("id", evento.id);
   }
 
-  await registrar(sugestao, obraId, "accepted");
+  return registrar(sugestao, obraId, "accepted");
 }

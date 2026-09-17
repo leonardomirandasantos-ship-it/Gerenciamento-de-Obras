@@ -87,6 +87,7 @@ export default async function PendenciasPage({
                 sugestao={sugestao}
                 evento={evento}
                 obraId={id}
+                citarMensagem
               />
             );
           })}
