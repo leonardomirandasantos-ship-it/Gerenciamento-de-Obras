@@ -3,6 +3,22 @@
 > Sequência recomendada para construir a V1 sem retrabalho. Cada bloco tem
 > critérios de aceite. Priorize o miolo (captura + classificação) antes das lentes.
 
+## Status do build (atualizado conforme avançamos)
+
+| Bloco | Situação |
+|---|---|
+| 0 — Fundação | ✅ feito (tokens, tipografia, Supabase no lugar do IndexedDB — ver D48) |
+| 1 — Navegação | ✅ feito (Home, Nova obra, abas no topo, localização no header) |
+| 2 — Conversa + captura | 🟡 feito para texto/foto/vídeo/PDF; **voz pendente** (D56) |
+| 3 — Classificação | ✅ RegrasClassifier + chip + "não classificado" (WebLLM/API não usados ainda) |
+| 4 — Editar registro | 🟡 bottom sheet completo (tipo, fase, valor/favorecido, excluir); **excluir em lote pendente** (D53) |
+| 5 — Engine de sugestão | ✅ casos A, B, C, D, E + anti-irritação |
+| 6 — Lentes de logística | ✅ Pendências, Documentação, visor de foto, Decisões, Resumo |
+| 7 — Financeiro | 🟡 dash, prestador, orçamentos e agrupamento por favorecido funcionando; **OCR do comprovante pendente** (D55) |
+| 8 — Configurações e fases | ✅ feito (reordenar por setas — D50) |
+| 9 — Login e acesso | 🟡 e-mail/senha funcionando; **Google exige configurar o provider no Supabase** |
+| 10 — Polimento | ⬜ pendente (inclui trocar os placeholders de logo pelos assets de marca) |
+
 ---
 
 ## Bloco 0 — Fundação

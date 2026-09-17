@@ -137,6 +137,23 @@ objetivo de **testar o conceito**. Caminhos (do mais simples ao mais rico):
 ## 4. Pendências conscientes (não bloqueiam a V1)
 
 1. Validar com **export de 1 conversa 1:1 de pagamento** (refina E7/Caso E).
-2. Confirmar libs de IA no build (regras → WebLLM → API).
-3. Limiar de similaridade do "checklist vivo" (Caso B) para não sugerir errado.
+2. Confirmar libs de IA no build (regras → WebLLM → API). → ver D55.
+3. ~~Limiar de similaridade do "checklist vivo"~~ → resolvido em D51.
 4. Definir gatilhos de "fase" que disparam notificação.
+
+---
+
+## 5. Decision Log — decisões tomadas durante o build da V1 (D48–D57)
+
+| # | Decisão | Status |
+|---|---------|--------|
+| D48 | **Persistência = Supabase** (Postgres + Auth + Storage), não IndexedDB local como sugeria o `07`. Motivo: ela usa **dois celulares**, e o dado precisa existir nos dois; o Storage também resolve foto/comprovante. O `07` já previa adaptação pela IA de código | ✅ |
+| D49 | Schema **single-user** de verdade: sem empresa/convite/papéis. Todo dado pertence ao `owner_id = auth.uid()`, com RLS por dono da obra. Conta criada no painel do Supabase (coerente com D35/D36) | ✅ |
+| D50 | Reordenar fases por **setas ▲▼**, não drag-and-drop. Motivo: drag em web mobile exige lib e quebra fácil no toque; a função é a mesma | ✅ |
+| D51 | **Limiar do checklist vivo (Caso B):** sugere fusão quando **2+ itens casam E ≥50% de sobreposição** (após normalizar acento, status e número). Conservador de propósito: erra pra menos, não pra mais | ✅ |
+| D52 | **Ordem de classificação:** texto com 3+ linhas é lista (sinal mais forte do uso real, ~40% do texto) e ganha de "decisão". O **nome do arquivo** entra na classificação (ex.: "Orçamento 335396.pdf" → E8) | ✅ |
+| D53 | **Excluir = soft delete** (`deleted = true`), nunca apaga fisicamente — mantém "toda ação é reversível". Exclusão **em lote** (D17) ainda não implementada | 🟡 |
+| D54 | **Orçamentos não tem aba própria** (as abas são as 6 do D45): é acessada pelo card no Dash | ✅ |
+| D55 | **OCR de comprovante ainda não implementado.** Enquanto isso, o caminho é manual: editar o registro e informar valor + favorecido no bottom sheet. Pagamento por **texto** ("pix de R$ 1.250 pro José Costa") já é extraído automaticamente. Decisão pendente com o dono: adotar Tesseract.js (custo: ~10MB baixados no 1º uso, roda no celular) ou esperar | 🟡 |
+| D56 | **Captura de voz ainda não implementada** (D19 já era 🟡): o input aceita texto e anexos (foto/vídeo/PDF) | 🟡 |
+| D57 | **Tema único, sem dark mode.** O template inicial invertia as cores pelo `prefers-color-scheme` e quebrava o contraste dos botões; agora a paleta do `05` vale sempre | ✅ |

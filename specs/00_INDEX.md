@@ -85,9 +85,12 @@ tivesse que preencher tudo certinho, usaria uma planilha*).
 
 ## Estado do projeto
 
-- **Fase atual:** discovery/produto concluído. Pronto para desenvolvimento da V1.
+- **Fase atual:** V1 em implementação. Blocos 0–8 do `08_BUILD_CHECKLIST.md`
+  essencialmente feitos (ver a tabela de status lá); falta polimento, voz,
+  OCR de comprovante, exclusão em lote e os assets de marca.
 - **Telas:** 15 desenhadas (ver `04_TELAS.md`).
-- **Marca:** definida (ver `06_BRANDING.md`).
-- **Decisões:** D1–D47 registradas (ver `03_DECISOES.md`).
-- **Pendências conscientes:** confirmar libs de IA no build; validar export 1:1
-  de conversa de pagamento (não bloqueante).
+- **Marca:** definida em texto (ver `06_BRANDING.md`), mas **os arquivos de
+  logo/mascote ainda não estão no repositório** — o app usa placeholders até
+  chegarem em `public/brand/`.
+- **Decisões:** D1–D47 (produto) + D48–D57 (tomadas no build) em `03_DECISOES.md`.
+- **Stack real:** Next.js + Supabase (Postgres/Auth/Storage), deploy na Vercel.
