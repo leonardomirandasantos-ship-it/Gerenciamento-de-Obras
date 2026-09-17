@@ -1,5 +1,7 @@
 import { createClient } from "./supabase/client";
 import { chaveSegura } from "./arquivos";
+import { extrairPrazoDeclarado } from "./datas";
+import { normalizarFavorecido } from "./pagamento";
 import { classificar } from "./classify";
 import { extrairDadosPagamento } from "./pagamento";
 import type { AnexoTipo, EventoKind } from "./types";
@@ -32,6 +34,40 @@ function semVazios(objeto: Record<string, unknown>) {
   return Object.fromEntries(Object.entries(objeto).filter(([, valor]) => valor !== undefined));
 }
 
+/**
+ * Prazo que ela declarou entra sozinho, sem sugestão (D110): "comprar cimento
+ * até sexta" é prazo, não convite a uma pergunta. Data só citada ("reunião
+ * 11/04") continua virando sugestão, porque pode ser só referência.
+ */
+function prazoDaPendencia(kind: EventoKind, texto: string): string | undefined {
+  if (kind !== "E1_lista" && kind !== "E2_checklist") return undefined;
+  return extrairPrazoDeclarado(texto) ?? undefined;
+}
+
+/**
+ * Se o favorecido já existe na obra, o pagamento novo é LIGADO a ele — mesmo
+ * nome não deveria virar pessoa nova no resumo (D111). É o que fazia "paguei
+ * pro Valdir" duas vezes aparecer como dois Valdires sem tipo.
+ */
+async function ligarFavorecidoExistente(
+  supabase: ReturnType<typeof createClient>,
+  obraId: string,
+  nome: string | undefined,
+): Promise<{ favorecido_id?: string; payeeType?: string }> {
+  if (!nome) return {};
+
+  const { data: cadastrados } = await supabase
+    .from("favorecidos")
+    .select("id, name, type")
+    .eq("obra_id", obraId);
+
+  const chave = normalizarFavorecido(nome);
+  const achado = (cadastrados ?? []).find((f) => normalizarFavorecido(f.name) === chave);
+
+  if (!achado) return {};
+  return { favorecido_id: achado.id, payeeType: achado.type ?? undefined };
+}
+
 export async function capturarTexto({
   obraId,
   texto,
@@ -52,8 +88,14 @@ export async function capturarTexto({
 
   const payload = semVazios({
     ...(tipoFinal === "E7_pagamento" ? extrairDadosPagamento(texto) : {}),
+    date: prazoDaPendencia(tipoFinal, texto),
     ...(payloadExtra ?? {}),
   });
+
+  const vinculo =
+    tipoFinal === "E7_pagamento"
+      ? await ligarFavorecidoExistente(supabase, obraId, payload.payeeName as string | undefined)
+      : {};
 
   await supabase.from("eventos").insert({
     obra_id: obraId,
@@ -61,9 +103,10 @@ export async function capturarTexto({
     confidence: kind ? 1 : automatico.confidence,
     raw_text: texto,
     phase_id: faseAtualId,
+    favorecido_id: vinculo.favorecido_id ?? null,
     // Tipo declarado pelo usuário: não reabrir sugestão de classificação.
     edited: Boolean(kind),
-    payload,
+    payload: semVazios({ ...payload, payeeType: vinculo.payeeType ?? payload.payeeType }),
   });
 }
 

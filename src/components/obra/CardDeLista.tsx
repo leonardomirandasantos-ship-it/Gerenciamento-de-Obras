@@ -8,6 +8,7 @@ import { formatarData } from "@/lib/datas";
 import { createClient } from "@/lib/supabase/client";
 import { SwipeParaExcluir } from "./SwipeParaExcluir";
 import { VerNoChat } from "./VerNoChat";
+import { EditarLista } from "./EditarLista";
 import type { ChecklistItem, ChecklistPayload, Evento, ListaPayload } from "@/lib/types";
 
 /**
@@ -19,6 +20,7 @@ import type { ChecklistItem, ChecklistPayload, Evento, ListaPayload } from "@/li
 export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string }) {
   const router = useRouter();
   const [carregando, setCarregando] = useState(false);
+  const [editando, setEditando] = useState(false);
 
   const ehChecklist = evento.kind === "E2_checklist";
   const payload = evento.payload as ChecklistPayload;
@@ -111,6 +113,7 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
   }
 
   const tudoFeito = total > 0 && feitos === total;
+  const prazoDaLista = (evento.payload as { date?: string }).date;
 
   return (
     <SwipeParaExcluir onExcluir={tirarDaLista} rotulo="Tirar">
@@ -173,8 +176,24 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
           ))}
         </ul>
 
-        <div className="flex items-center justify-end">
-          <VerNoChat obraId={obraId} eventoId={ehChecklist ? (payload.sourceEventId ?? evento.id) : evento.id} />
+        {prazoDaLista && (
+          <span className="chip" style={{ "--chip": "var(--info)" } as React.CSSProperties}>
+            📅 {formatarData(prazoDaLista)}
+          </span>
+        )}
+
+        <div className="flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => setEditando(true)}
+            className="text-micro text-primary underline"
+          >
+            editar
+          </button>
+          <VerNoChat
+            obraId={obraId}
+            eventoId={ehChecklist ? (payload.sourceEventId ?? evento.id) : evento.id}
+          />
         </div>
 
         <div className="flex gap-2 border-t border-line pt-3">
@@ -196,6 +215,15 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
           </button>
         </div>
       </div>
+
+      {editando && (
+        <EditarLista
+          evento={evento}
+          obraId={obraId}
+          itens={itens}
+          onFechar={() => setEditando(false)}
+        />
+      )}
     </SwipeParaExcluir>
   );
 }

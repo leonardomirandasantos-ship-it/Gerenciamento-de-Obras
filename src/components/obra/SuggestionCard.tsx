@@ -55,9 +55,9 @@ export function SuggestionCard({
             placeholder="R$"
             className="w-24 rounded-card border border-line bg-surface px-3 py-2 text-base text-ink outline-none focus:border-primary"
           />
-          <span className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1">
             <CampoFavorecido obraId={obraId} valor={favorecido} onChange={setFavorecido} />
-          </span>
+          </div>
         </div>
       )}
 

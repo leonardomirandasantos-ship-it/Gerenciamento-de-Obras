@@ -40,9 +40,15 @@ const REGEX_VALOR = new RegExp(
 // primeira pontuação.
 const NOME = String.raw`[\p{L}][\p{L}à-ÿ]*(?:\s+(?:d[aeo]s?\s+)?[\p{L}][\p{L}à-ÿ]*){0,2}`;
 
+/**
+ * Artigo entra no regex como opcional (e não conta como palavra do nome),
+ * senão "para a construção Bom Lar" perdia o "Lar" ao sobrar só 3 palavras.
+ */
+const ARTIGO_OPCIONAL = String.raw`(?:(?:os?|as?|uma?s?)\s+)?`;
+
 /** "paguei 200 para armando pintor" — quem recebeu vem depois da preposição. */
 const REGEX_FAVORECIDO = new RegExp(
-  String.raw`\b(?:pro|pra|para|ao|à|favorecido:?|recebedor:?)\s+(${NOME})`,
+  String.raw`\b(?:pro|pra|para|ao|à|favorecido:?|recebedor:?)\s+${ARTIGO_OPCIONAL}(${NOME})`,
   "iu",
 );
 
@@ -52,7 +58,7 @@ const REGEX_FAVORECIDO = new RegExp(
  * também aparece em lugar e tempo ("na obra", "na sexta") — daí o NAO_E_NOME.
  */
 const REGEX_LOCAL_DA_COMPRA = new RegExp(
-  String.raw`\b(?:n[ao]s?|em|d[ao]s?)\s+(${NOME})`,
+  String.raw`\b(?:n[ao]s?|em|d[ao]s?)\s+${ARTIGO_OPCIONAL}(${NOME})`,
   "iu",
 );
 
@@ -96,6 +102,13 @@ const NAO_E_NOME = new Set([
   "baixo",
 ]);
 
+/**
+ * Artigo antes do nome é o jeito natural de falar ("paguei pro **o** Valdir",
+ * "adiantei pra **a** dona Maria"), mas entrava no nome: "o Valdir" e "Valdir"
+ * viravam duas pessoas no resumo, porque o agrupamento é pelo nome.
+ */
+const ARTIGOS = new Set(["o", "a", "os", "as", "um", "uma", "ao", "à"]);
+
 /** Palavras que só ligam a frase: se sobraram no fim, não são do nome. */
 const CONECTORES = new Set([
   "das",
@@ -119,10 +132,14 @@ const CONECTORES = new Set([
 
 function formatarNome(bruto: string): string | null {
   const palavras = bruto.trim().split(/\s+/);
+
+  while (palavras.length > 1 && ARTIGOS.has(palavras[0].toLowerCase())) {
+    palavras.shift();
+  }
   while (palavras.length > 1 && CONECTORES.has(palavras[palavras.length - 1].toLowerCase())) {
     palavras.pop();
   }
-  if (NAO_E_NOME.has(palavras[0].toLowerCase())) return null;
+  if (palavras.length === 0 || NAO_E_NOME.has(palavras[0].toLowerCase())) return null;
   return palavras
     .map((palavra) =>
       palavra.length <= 2 || CONECTORES.has(palavra.toLowerCase())

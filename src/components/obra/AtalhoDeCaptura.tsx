@@ -8,6 +8,7 @@ import { CampoFavorecido } from "./CampoFavorecido";
 import { capturarArquivos, capturarTexto } from "@/lib/capturar";
 import { createClient } from "@/lib/supabase/client";
 import { AMBIENTES, ambientesDaObra } from "@/lib/ambientes";
+import { extrairPrazoDeclarado, formatarData } from "@/lib/datas";
 import { RÓTULO_TIPO, type EventoKind } from "@/lib/types";
 
 type Atalho = {
@@ -73,6 +74,7 @@ export function AtalhoDeCaptura({
   const [valor, setValor] = useState("");
   const [favorecido, setFavorecido] = useState("");
   const [ambientes, setAmbientes] = useState<string[]>([]);
+  const [prazo, setPrazo] = useState("");
   const [ambientesConhecidos, setAmbientesConhecidos] = useState<string[]>(AMBIENTES);
   const [salvando, setSalvando] = useState(false);
   const [erroDeEnvio, setErroDeEnvio] = useState<string | null>(null);
@@ -80,6 +82,7 @@ export function AtalhoDeCaptura({
 
   const aba = pathname.split("/")[3] ?? "";
   const atalho = POR_ABA[aba];
+  const prazoNoTexto = extrairPrazoDeclarado(texto);
 
   // Na conversa o composer já está ali embaixo; nas configurações não faz sentido.
   if (!atalho) return null;
@@ -110,6 +113,7 @@ export function AtalhoDeCaptura({
     setValor("");
     setFavorecido("");
     setAmbientes([]);
+    setPrazo("");
   }
 
   function extraDoTipo(): Record<string, unknown> | undefined {
@@ -123,6 +127,10 @@ export function AtalhoDeCaptura({
     // de decisões, então é o momento natural de dizer "isso é do banheiro".
     if (atalho.kind === "E3_decisao" && ambientes.length > 0) {
       return { environments: ambientes, environment: ambientes[0] };
+    }
+    // Campo explícito ganha do texto; vazio, vale o prazo que ela escreveu.
+    if (atalho.kind === "E1_lista" && prazo) {
+      return { date: prazo };
     }
     return undefined;
   }
@@ -231,6 +239,29 @@ export function AtalhoDeCaptura({
                   onChange={setAmbientes}
                   conhecidos={ambientesConhecidos}
                 />
+              </div>
+            )}
+
+            {atalho.kind === "E1_lista" && (
+              <div className="mb-3 space-y-1">
+                <label className="font-display text-caption font-semibold text-ink">
+                  Prazo (opcional)
+                </label>
+                <input
+                  type="date"
+                  value={prazo}
+                  onChange={(e) => setPrazo(e.target.value)}
+                  className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
+                />
+                {!prazo && prazoNoTexto && (
+                  <button
+                    type="button"
+                    onClick={() => setPrazo(prazoNoTexto)}
+                    className="text-micro text-primary underline"
+                  >
+                    entendi {formatarData(prazoNoTexto)} do que você escreveu — usar?
+                  </button>
+                )}
               </div>
             )}
 

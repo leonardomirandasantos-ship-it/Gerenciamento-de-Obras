@@ -36,6 +36,18 @@ const REGEX_COMECA_COM_QUANTIDADE = /^\s*\d+([.,]\d+)?\s*\S/;
 const REGEX_MATERIAL =
   /\bcomprar\b|\bcota[çc][ãa]o\b|\bsacos?\b|\bbarras?\b|m³|\bkg\b|\brolos?\b|\bcx\b|\bun\b|\bpe[çc]as?\b|\bmm\b|\bcm\b|\bmetros?\b/i;
 
+/**
+ * Intenção declarada: "preciso", "tenho que", "falta". Precisa ser testada
+ * ANTES de decisão, senão "preciso resolver o rejunte para amanhã" virava
+ * decisão de acabamento só por citar rejunte — é tarefa, não especificação.
+ * Se há dois-pontos com valor ("Rejunte do banheiro: cinza ártico"), aí sim é
+ * decisão, mesmo com verbo de intenção por perto.
+ */
+const REGEX_INTENCAO =
+  /\bpreciso\b|\bprecisa\b|\bprecisamos\b|\btenho que\b|\btemos que\b|\bfalta\b|\bfaltam\b|\bvou\b|\bvamos\b/i;
+
+const REGEX_DECLARA_VALOR = /:\s*\S/;
+
 /** Pendência curta em forma de tarefa ("Mudar tomada", "Requadros portas"). */
 const REGEX_TAREFA =
   /^\s*(?:requadr|mud(?:ar|e)|troc|rejunt|instal|coloc|compr|ped(?:ir|e)|confirm|ajust|aument|refaz|refar|falar|termin|finaliz|revis|limp|ver\b)/i;
@@ -81,10 +93,17 @@ export function classificar(entrada: EntradaClassificacao): ResultadoClassificac
     return { kind: "E7_pagamento", confidence: 0.75 };
   }
 
+  const ehTarefaDeclarada =
+    REGEX_INTENCAO.test(texto) && !REGEX_DECLARA_VALOR.test(texto) && linhas.length < 3;
+
   // "REJUNTES" / "Piso social: porcelanato bege" — o assunto se declara na
   // primeira linha, mesmo quando o bloco tem várias linhas de especificação.
-  if (REGEX_DECISAO.test(primeiraLinha)) {
+  if (!ehTarefaDeclarada && REGEX_DECISAO.test(primeiraLinha)) {
     return { kind: "E3_decisao", confidence: 0.6 };
+  }
+
+  if (ehTarefaDeclarada) {
+    return { kind: "E1_lista", confidence: 0.6 };
   }
 
   if (linhas.length >= 3) {
