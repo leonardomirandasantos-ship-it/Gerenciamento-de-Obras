@@ -133,7 +133,7 @@ export function EventBubble({
         <ChipTipo kind={evento.kind} />
         <span className="flex shrink-0 items-center gap-3">
           {temAnexo && (
-            <BotaoEncaminhar anexos={evento.anexos ?? []} descricao={legendaParaEncaminhar} />
+            <BotaoEncaminhar evento={evento} descricao={legendaParaEncaminhar} />
           )}
           <button type="button" onClick={onEditar} className="text-micro text-ink-soft underline">
             editar

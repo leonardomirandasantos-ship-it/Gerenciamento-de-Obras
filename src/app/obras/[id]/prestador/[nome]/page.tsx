@@ -152,7 +152,7 @@ export default async function PrestadorPage({
                           voltar nesta tela (D137). */}
                       {(evento.anexos ?? []).length > 0 && (
                         <BotaoEncaminhar
-                          anexos={evento.anexos ?? []}
+                          evento={evento}
                           descricao={`Comprovante — ${formatarReais(payload.amount ?? 0)} para ${pessoa.nome}`}
                         />
                       )}

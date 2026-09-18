@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { formatarReais } from "@/lib/pagamento";
 import { filtrarArquivos, type FiltroDeArquivos } from "@/lib/documentacao";
 import { fornecedorDoOrcamento, marcarFechado, type OrcamentoPayload } from "@/lib/orcamentos";
+import { paraBusca, textoDeBuscaDoArquivo, tituloDoArquivo } from "@/lib/nomeDoArquivo";
 import { BotaoEncaminhar } from "./BotaoEncaminhar";
 import { VerNoChat } from "./VerNoChat";
 import type { Evento } from "@/lib/types";
@@ -23,20 +24,18 @@ function iconeDo(evento: Evento): string {
   return "💬";
 }
 
+/**
+ * A busca olha tudo — legenda dela, leitura da IA, nome original do arquivo,
+ * fornecedor e itens orçados — mesmo que o cartão mostre um nome só (D149).
+ * "box" acha a proposta da vidraçaria sem que "box" apareça na tela.
+ */
 function textoDeBusca(evento: Evento): string {
   const payload = evento.payload as OrcamentoPayload;
-  return [
-    payload.fileName,
-    fornecedorDoOrcamento(payload),
+  return textoDeBuscaDoArquivo(evento, [
     payload.product,
     payload.category,
     ...(payload.items ?? []),
-    evento.raw_text,
-    evento.caption,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
+  ]);
 }
 
 function CartaoDeArquivo({ obraId, evento }: { obraId: string; evento: Evento }) {
@@ -48,12 +47,8 @@ function CartaoDeArquivo({ obraId, evento }: { obraId: string; evento: Evento })
   const emDuvida = evento.kind === "unclassified";
   const anexo = (evento.anexos ?? [])[0];
   const fornecedor = fornecedorDoOrcamento(payload);
-  const titulo =
-    evento.caption ||
-    payload.product ||
-    payload.fileName ||
-    evento.raw_text?.slice(0, 60) ||
-    (ehOrcamento ? "Orçamento" : "Arquivo");
+  const titulo = tituloDoArquivo(evento);
+  const valor = payload.amount !== undefined ? formatarReais(payload.amount) : undefined;
 
   async function alternarFechado() {
     setSalvando(true);
@@ -69,10 +64,14 @@ function CartaoDeArquivo({ obraId, evento }: { obraId: string; evento: Evento })
           {iconeDo(evento)}
         </div>
         <div className="min-w-0 flex-1 space-y-0.5">
-          <p className="line-clamp-2 font-medium text-ink">{titulo}</p>
-          {fornecedor && <p className="text-xs text-ink-soft">{fornecedor}</p>}
-          {payload.amount !== undefined && (
-            <p className="text-sm font-medium text-ink">{formatarReais(payload.amount)}</p>
+          <p className="line-clamp-2 break-words font-medium text-ink">{titulo}</p>
+          {(fornecedor || valor) && (
+            // Nome comprido corta; o valor nunca — é o que ela procura com o olho.
+            <p className="flex gap-1 text-sm text-ink-soft">
+              {fornecedor && <span className="truncate">{fornecedor}</span>}
+              {fornecedor && valor && <span aria-hidden>·</span>}
+              {valor && <span className="shrink-0 font-medium text-ink">{valor}</span>}
+            </p>
           )}
           <div className="flex flex-wrap items-center gap-2 text-micro text-ink-soft">
             <span>{new Date(evento.received_at).toLocaleDateString("pt-BR")}</span>
@@ -93,17 +92,13 @@ function CartaoDeArquivo({ obraId, evento }: { obraId: string; evento: Evento })
         </div>
       </div>
 
-      {payload.items && payload.items.length > 0 && (
-        <p className="line-clamp-2 text-micro text-ink-soft">{payload.items.join(" · ")}</p>
-      )}
-
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-2">
         {anexo && (
           <a href={anexo.url} target="_blank" rel="noreferrer" className="text-micro text-primary underline">
             abrir
           </a>
         )}
-        {anexo && <BotaoEncaminhar anexos={evento.anexos ?? []} descricao={titulo} />}
+        {anexo && <BotaoEncaminhar evento={evento} descricao={titulo} />}
         <VerNoChat obraId={obraId} eventoId={evento.id} />
         {ehOrcamento && (
           <button
@@ -150,7 +145,7 @@ export function ListaArquivos({
     );
   }
 
-  const termo = busca.trim().toLowerCase();
+  const termo = paraBusca(busca.trim());
   const doFiltro = filtrarArquivos(eventos, filtro);
   const visiveis = termo ? doFiltro.filter((e) => textoDeBusca(e).includes(termo)) : doFiltro;
 

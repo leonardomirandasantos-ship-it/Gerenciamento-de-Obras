@@ -204,7 +204,15 @@ export async function capturarArquivos({
         aviso = aviso ?? "Guardei o PDF, mas ele é grande demais para eu ler sozinho.";
         continue;
       }
-      const resultado = await entenderArquivo(supabase, obraId, faseAtualId, evento.id, file, contexto);
+      const resultado = await entenderArquivo(
+        supabase,
+        obraId,
+        faseAtualId,
+        evento.id,
+        file,
+        contexto,
+        descricao,
+      );
       entendidos += resultado.aplicados;
       aviso = aviso ?? resultado.aviso;
     }
@@ -223,6 +231,10 @@ const LIMITE_PARA_LER = 4 * 1024 * 1024;
  *
  * PDF é sempre UM registro (D148): o orçamento é o próprio arquivo, e itens
  * orçados não são pendências dela — virariam listas que ninguém pediu.
+ *
+ * O que ELA escreveu junto do arquivo nunca é sobrescrito (D149): são as
+ * palavras que ela vai usar para buscar. O texto da IA vai para
+ * `payload.summary` e só vira legenda quando ela não escreveu nada.
  */
 async function entenderArquivo(
   supabase: ReturnType<typeof createClient>,
@@ -231,6 +243,7 @@ async function entenderArquivo(
   eventoId: string,
   arquivo: File,
   contexto: ContextoDaObra,
+  legenda = "",
 ): Promise<{ aplicados: number; aviso?: string }> {
   const { entendimento, aviso } = await pedirEntendimento(arquivo, contexto);
   if (!entendimento) return { aplicados: 0, aviso };
@@ -244,7 +257,10 @@ async function entenderArquivo(
   const kind = kindDoTipo(principal.tipo);
   if (!kind) return { aplicados: 0 };
 
-  const payload: Record<string, unknown> = { fileName: arquivo.name };
+  const payload: Record<string, unknown> = {
+    fileName: arquivo.name,
+    summary: principal.texto?.trim() || undefined,
+  };
   // "unclassified" também guarda valor e nome: quando ela tocar "é gasto" no
   // card de dúvida, o pagamento já nasce preenchido.
   if (kind === "E7_pagamento" || kind === "E8_orcamento" || kind === "unclassified") {
@@ -271,7 +287,7 @@ async function entenderArquivo(
       kind,
       confidence: kind === "unclassified" ? 0 : 0.9,
       favorecido_id: vinculo.favorecido_id ?? null,
-      caption: principal.texto,
+      caption: legenda || principal.texto,
       edited: kind !== "unclassified",
       payload: semVazios({ ...payload, payeeType: vinculo.payeeType }),
     })

@@ -98,7 +98,7 @@ function VisorFoto({
             comprovante para o pedreiro (D137). */}
         <span className="[&_button]:text-white [&_button]:opacity-80">
           <BotaoEncaminhar
-            anexos={foto.evento.anexos ?? []}
+            evento={foto.evento}
             descricao={foto.evento.caption ?? undefined}
             rotulo="mandar"
           />

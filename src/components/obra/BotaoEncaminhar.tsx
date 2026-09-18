@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Anexo } from "@/lib/types";
+import { nomeParaEncaminhar } from "@/lib/nomeDoArquivo";
+import type { Evento } from "@/lib/types";
 
 /**
  * Encaminhar o anexo para fora do app (D137).
@@ -16,19 +17,23 @@ import type { Anexo } from "@/lib/types";
  * hidratação. O botão sempre aparece e decide no toque — compartilha se der,
  * baixa se não der. Baixar é o caminho no desktop, onde o Web Share com
  * arquivo quase não existe.
+ *
+ * O arquivo sai com nome legível (D149), não com o nome original nem com um
+ * "comprovante.pdf" fixo: é o que o pedreiro vê no WhatsApp.
  */
 export function BotaoEncaminhar({
-  anexos,
+  evento,
   descricao,
   rotulo = "encaminhar",
 }: {
-  anexos: Anexo[];
+  evento: Evento;
   /** Vai como legenda no compartilhamento, quando o destino aceitar texto. */
   descricao?: string;
   rotulo?: string;
 }) {
   const [estado, setEstado] = useState<"parado" | "preparando" | "erro">("parado");
 
+  const anexos = evento.anexos ?? [];
   const anexo = anexos.find((a) => a.tipo === "foto" || a.tipo === "pdf") ?? anexos[0];
   if (!anexo) return null;
 
@@ -42,8 +47,9 @@ export function BotaoEncaminhar({
       if (!resposta.ok) throw new Error(`storage respondeu ${resposta.status}`);
 
       const blob = await resposta.blob();
-      const extensao = blob.type.split("/")[1]?.split("+")[0] ?? "jpg";
-      const arquivo = new File([blob], `comprovante.${extensao}`, {
+      const subtipo = blob.type.split("/")[1]?.split("+")[0];
+      const extensao = subtipo === "jpeg" ? "jpg" : subtipo || "jpg";
+      const arquivo = new File([blob], `${nomeParaEncaminhar(evento)}.${extensao}`, {
         type: blob.type || "application/octet-stream",
       });
 
