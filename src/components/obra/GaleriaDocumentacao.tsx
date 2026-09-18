@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { criarFase } from "@/lib/fases";
 import { BotaoEncaminhar } from "./BotaoEncaminhar";
+import { EditarFase } from "./EditarFase";
 import type { Evento, Fase } from "@/lib/types";
 
 type FotoItem = {
@@ -294,6 +295,9 @@ export function GaleriaDocumentacao({
   const [aberta, setAberta] = useState<FotoItem | null>(null);
   const [criandoFase, setCriandoFase] = useState(false);
   const [nomeDaFase, setNomeDaFase] = useState("");
+  const [editandoFase, setEditandoFase] = useState(false);
+
+  const faseSelecionada = fases.find((fase) => fase.id === faseFiltro) ?? null;
 
   async function adicionarFase() {
     const criada = await criarFase(obraId, nomeDaFase, fases.length);
@@ -384,9 +388,35 @@ export function GaleriaDocumentacao({
         </div>
       )}
 
-      <p className="text-xs text-ink-soft">
-        {visiveis.length} {visiveis.length === 1 ? "foto" : "fotos"}
-      </p>
+      {/* Com uma fase selecionada, o "editar" aparece ali mesmo (D147): é onde
+          ela percebe que a fase está errada, e não nas Configurações. */}
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-ink-soft">
+          {visiveis.length} {visiveis.length === 1 ? "foto" : "fotos"}
+          {faseSelecionada ? ` em ${faseSelecionada.name}` : ""}
+        </p>
+        {faseSelecionada && (
+          <button
+            type="button"
+            onClick={() => setEditandoFase(true)}
+            className="shrink-0 text-micro font-semibold text-primary underline"
+          >
+            editar fase
+          </button>
+        )}
+      </div>
+
+      {editandoFase && faseSelecionada && (
+        <EditarFase
+          fase={faseSelecionada}
+          fotosNaFase={visiveis.length}
+          onFechar={() => setEditandoFase(false)}
+          onExcluida={() => {
+            setEditandoFase(false);
+            setFaseFiltro("todas");
+          }}
+        />
+      )}
 
       <div className="grid grid-cols-3 gap-2">
         {visiveis.map((foto) => (

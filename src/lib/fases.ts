@@ -28,3 +28,22 @@ export async function criarFase(
 
   return data;
 }
+
+export async function renomearFase(faseId: string, nome: string): Promise<boolean> {
+  const limpo = nome.trim();
+  if (!limpo) return false;
+  const supabase = createClient();
+  const { error } = await supabase.from("fases").update({ name: limpo }).eq("id", faseId);
+  return !error;
+}
+
+/**
+ * Exclui a fase. Nunca apaga registro: `eventos.phase_id` e
+ * `obras.current_phase_id` são `on delete set null` no schema, então o que
+ * estava nela só fica sem fase e continua em "Todas" (D147).
+ */
+export async function excluirFase(faseId: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("fases").delete().eq("id", faseId);
+  return !error;
+}

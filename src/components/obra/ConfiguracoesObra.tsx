@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { caminhoDaCapa } from "@/lib/fotoObra";
-import { criarFase } from "@/lib/fases";
+import { criarFase, excluirFase } from "@/lib/fases";
 import type { Fase, Obra } from "@/lib/types";
 
 export function ConfiguracoesObra({
@@ -26,6 +26,9 @@ export function ConfiguracoesObra({
   const [novaFase, setNovaFase] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [trocandoCapa, setTrocandoCapa] = useState(false);
+  // Excluir fase era um toque só, sem volta — um esbarrão ao rolar a lista
+  // bastava (D147). Agora a lixeira arma e um segundo toque confirma.
+  const [faseParaExcluir, setFaseParaExcluir] = useState<string | null>(null);
   const capaInputRef = useRef<HTMLInputElement>(null);
 
   async function salvarObra() {
@@ -73,8 +76,8 @@ export function ConfiguracoesObra({
   }
 
   async function removerFase(fase: Fase) {
-    const supabase = createClient();
-    await supabase.from("fases").delete().eq("id", fase.id);
+    await excluirFase(fase.id);
+    setFaseParaExcluir(null);
     router.refresh();
   }
 
@@ -282,14 +285,33 @@ export function ConfiguracoesObra({
                 className="min-w-0 flex-1 rounded-card border border-line bg-surface px-2 py-2 text-base text-ink outline-none focus:border-primary"
               />
 
-              <button
-                type="button"
-                onClick={() => removerFase(fase)}
-                className="shrink-0 text-xs text-alert"
-                aria-label={`Remover ${fase.name}`}
-              >
-                🗑
-              </button>
+              {faseParaExcluir === fase.id ? (
+                <span className="flex shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFaseParaExcluir(null)}
+                    className="text-micro text-ink-soft"
+                  >
+                    não
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removerFase(fase)}
+                    className="rounded-card bg-alert px-2 py-1 text-micro font-semibold text-white"
+                  >
+                    excluir
+                  </button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setFaseParaExcluir(fase.id)}
+                  className="shrink-0 text-xs text-alert"
+                  aria-label={`Remover ${fase.name}`}
+                >
+                  🗑
+                </button>
+              )}
             </li>
           ))}
         </ul>
