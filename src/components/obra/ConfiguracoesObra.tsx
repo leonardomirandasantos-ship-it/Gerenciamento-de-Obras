@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { caminhoDaCapa } from "@/lib/fotoObra";
-import { PALETA_DE_FASES } from "@/lib/tokens";
+import { criarFase } from "@/lib/fases";
 import type { Fase, Obra } from "@/lib/types";
 
 export function ConfiguracoesObra({
@@ -79,16 +79,8 @@ export function ConfiguracoesObra({
   }
 
   async function adicionarFase() {
-    const nome = novaFase.trim();
-    if (!nome) return;
-
-    const supabase = createClient();
-    await supabase.from("fases").insert({
-      obra_id: obra.id,
-      name: nome,
-      color: PALETA_DE_FASES[fases.length % PALETA_DE_FASES.length],
-      order: fases.length,
-    });
+    if (!novaFase.trim()) return;
+    await criarFase(obra.id, novaFase, fases.length);
     setNovaFase("");
     router.refresh();
   }

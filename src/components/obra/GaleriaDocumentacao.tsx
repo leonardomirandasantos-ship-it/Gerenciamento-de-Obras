@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { criarFase } from "@/lib/fases";
 import { BotaoEncaminhar } from "./BotaoEncaminhar";
 import type { Evento, Fase } from "@/lib/types";
 
@@ -32,16 +33,41 @@ function VisorFoto({
   const [legenda, setLegenda] = useState(foto.evento.caption ?? "");
   const [faseId, setFaseId] = useState(foto.evento.phase_id ?? "");
   const [salvando, setSalvando] = useState(false);
+  const [criandoFase, setCriandoFase] = useState(false);
+  const [nomeDaFase, setNomeDaFase] = useState("");
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
 
   // Fase salva no toque: era um <select> embaixo da legenda e o usuário
   // acabava escrevendo o nome da fase na legenda por engano.
-  async function salvarFase(novaFase: string) {
-    setFaseId(novaFase);
+  // `null` tira a foto de qualquer fase (D142) — antes, uma vez posta numa
+  // fase, a foto não voltava mais para "sem fase".
+  async function salvarFase(novaFase: string | null) {
+    setFaseId(novaFase ?? "");
     const supabase = createClient();
     await supabase
       .from("eventos")
       .update({ phase_id: novaFase, edited: true })
       .eq("id", foto.evento.id);
+    router.refresh();
+  }
+
+  /** Cria a fase e já põe a foto nela: se ela criou ali, é para esta foto. */
+  async function criarFaseEAtribuir() {
+    const criada = await criarFase(obraId, nomeDaFase, fases.length);
+    setCriandoFase(false);
+    setNomeDaFase("");
+    if (criada) await salvarFase(criada.id);
+  }
+
+  /**
+   * Excluir direto do visor (D144): antes era abrir a conversa, achar a
+   * mensagem, abrir o editar e excluir. Duas etapas para não apagar por um
+   * toque errado — e é exclusão lógica, como no resto do app (D53).
+   */
+  async function excluir() {
+    const supabase = createClient();
+    await supabase.from("eventos").update({ deleted: true }).eq("id", foto.evento.id);
+    onFechar();
     router.refresh();
   }
 
@@ -117,11 +143,23 @@ function VisorFoto({
         <div className="space-y-1">
           <label className="text-xs font-medium text-ink-soft">Fase</label>
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => salvarFase(null)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
+                !faseId ? "border-primary bg-primary text-white" : "border-line text-ink-soft"
+              }`}
+            >
+              Sem fase
+            </button>
+
             {fases.map((fase) => (
               <button
                 key={fase.id}
                 type="button"
-                onClick={() => salvarFase(fase.id)}
+                // Tocar na fase que já está marcada desmarca — mesmo gesto
+                // de qualquer seleção, e o jeito mais rápido de desfazer.
+                onClick={() => salvarFase(fase.id === faseId ? null : fase.id)}
                 className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
                   fase.id === faseId
                     ? "border-primary bg-primary text-white"
@@ -131,7 +169,43 @@ function VisorFoto({
                 {fase.name}
               </button>
             ))}
+
+            {!criandoFase && (
+              <button
+                type="button"
+                onClick={() => setCriandoFase(true)}
+                className="rounded-full border border-dashed border-line px-3 py-1.5 text-xs font-medium text-ink-soft"
+              >
+                + nova fase
+              </button>
+            )}
           </div>
+
+          {criandoFase && (
+            <div className="flex gap-2 pt-1">
+              <input
+                autoFocus
+                value={nomeDaFase}
+                onChange={(e) => setNomeDaFase(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    criarFaseEAtribuir();
+                  }
+                }}
+                placeholder="Ex.: Paisagismo"
+                className="min-w-0 flex-1 rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
+              />
+              <button
+                type="button"
+                onClick={criarFaseEAtribuir}
+                disabled={!nomeDaFase.trim()}
+                className="shrink-0 rounded-card bg-primary px-4 text-sm font-semibold text-white disabled:opacity-40"
+              >
+                Criar
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-1">
@@ -154,6 +228,38 @@ function VisorFoto({
               {salvando ? "..." : "Salvar"}
             </button>
           </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-line pt-3">
+          {confirmandoExclusao ? (
+            <>
+              <span className="mr-auto text-micro text-ink-soft">
+                Some daqui e da conversa.
+              </span>
+              <button
+                type="button"
+                onClick={() => setConfirmandoExclusao(false)}
+                className="text-caption text-ink-soft"
+              >
+                cancelar
+              </button>
+              <button
+                type="button"
+                onClick={excluir}
+                className="rounded-card bg-alert px-3 py-2 font-display text-caption font-semibold text-white"
+              >
+                Excluir foto
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmandoExclusao(true)}
+              className="text-caption font-semibold text-alert"
+            >
+              🗑 excluir foto
+            </button>
+          )}
         </div>
 
         {fotos.length > 1 && (
@@ -187,8 +293,21 @@ export function GaleriaDocumentacao({
   eventos: Evento[];
   fases: Fase[];
 }) {
+  const router = useRouter();
   const [faseFiltro, setFaseFiltro] = useState<string>("todas");
   const [aberta, setAberta] = useState<FotoItem | null>(null);
+  const [criandoFase, setCriandoFase] = useState(false);
+  const [nomeDaFase, setNomeDaFase] = useState("");
+
+  async function adicionarFase() {
+    const criada = await criarFase(obraId, nomeDaFase, fases.length);
+    setCriandoFase(false);
+    setNomeDaFase("");
+    if (criada) {
+      setFaseFiltro(criada.id);
+      router.refresh();
+    }
+  }
 
   const fotos: FotoItem[] = eventos.flatMap((evento) =>
     (evento.anexos ?? [])
@@ -216,6 +335,16 @@ export function GaleriaDocumentacao({
   return (
     <div className="flex-1 space-y-4 overflow-y-auto p-4 pb-28">
       <div className="flex gap-2 overflow-x-auto pb-1">
+        {/* "+" antes de "Todas" (D143): no fim da barra, com muitas fases, ele
+            sumiria para fora da tela e ninguém acharia. */}
+        <button
+          type="button"
+          onClick={() => setCriandoFase((aberto) => !aberto)}
+          className="shrink-0 rounded-full border border-dashed border-line px-3 py-1 text-xs font-medium text-ink-soft"
+          aria-label="Criar fase"
+        >
+          +
+        </button>
         {[
           { id: "todas", name: "Todas" },
           ...fases.map((fase) => ({ id: fase.id, name: fase.name })),
@@ -235,6 +364,32 @@ export function GaleriaDocumentacao({
           </button>
         ))}
       </div>
+
+      {criandoFase && (
+        <div className="flex gap-2">
+          <input
+            autoFocus
+            value={nomeDaFase}
+            onChange={(e) => setNomeDaFase(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                adicionarFase();
+              }
+            }}
+            placeholder="Nome da fase — ex.: Paisagismo"
+            className="min-w-0 flex-1 rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
+          />
+          <button
+            type="button"
+            onClick={adicionarFase}
+            disabled={!nomeDaFase.trim()}
+            className="shrink-0 rounded-card bg-primary px-4 text-sm font-semibold text-white disabled:opacity-40"
+          >
+            Criar
+          </button>
+        </div>
+      )}
 
       <p className="text-xs text-ink-soft">
         {visiveis.length} {visiveis.length === 1 ? "foto" : "fotos"}
@@ -265,6 +420,7 @@ export function GaleriaDocumentacao({
 
       {aberta && (
         <VisorFoto
+          key={aberta.anexoId}
           foto={aberta}
           fotos={visiveis}
           fases={fases}
