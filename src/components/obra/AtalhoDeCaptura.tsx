@@ -1,22 +1,24 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { BottomSheet } from "./BottomSheet";
 import { SeletorDeAmbientes } from "./SeletorDeAmbientes";
 import { CampoFavorecido } from "./CampoFavorecido";
-import { capturarArquivos, capturarTexto } from "@/lib/capturar";
+import { capturarArquivos, capturarTexto, carregarContexto } from "@/lib/capturar";
 import { createClient } from "@/lib/supabase/client";
 import { AMBIENTES, ambientesDaObra } from "@/lib/ambientes";
 import { extrairPrazoDeclarado, formatarData } from "@/lib/datas";
 import { RÓTULO_TIPO, type EventoKind } from "@/lib/types";
 
 type Atalho = {
-  kind: EventoKind;
+  /** Sem tipo, o arquivo passa pela IA, que decide (Arquivos, D148). */
+  kind?: EventoKind;
   titulo: string;
   placeholder: string;
   /** Em vez de texto, abre a câmera/galeria direto. */
   arquivo?: boolean;
+  aceita?: string;
 };
 
 /**
@@ -41,23 +43,30 @@ const POR_ABA: Record<string, Atalho> = {
     titulo: "Fixar decisão",
     placeholder: "piso da sala: porcelanato bege 90x90",
   },
-  orcamentos: {
-    kind: "E8_orcamento",
-    titulo: "Novo orçamento",
-    placeholder: "Anexar o PDF ou a foto do orçamento",
-    arquivo: true,
-  },
   documentacao: {
     kind: "E4_documentacao",
     titulo: "Nova foto da obra",
     placeholder: "Escolher foto ou vídeo",
     arquivo: true,
+    aceita: "image/*,video/*",
   },
   prestador: {
     kind: "E7_pagamento",
     titulo: "Registrar pagamento",
     placeholder: "paguei 1.250 para o José da caixa d'água",
   },
+};
+
+/**
+ * Na metade "Arquivos" da Documentação o "+" manda PDF sem tipo declarado: a
+ * IA lê e decide se é orçamento, comprovante ou documento — igual a mandar
+ * pela conversa. Declarar "orçamento" aqui faria um comprovante entrar errado.
+ */
+const ARQUIVOS: Atalho = {
+  titulo: "Novo arquivo",
+  placeholder: "Anexar PDF",
+  arquivo: true,
+  aceita: "application/pdf,image/*",
 };
 
 export function AtalhoDeCaptura({
@@ -69,6 +78,7 @@ export function AtalhoDeCaptura({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [aberto, setAberto] = useState(false);
   const [texto, setTexto] = useState("");
   const [valor, setValor] = useState("");
@@ -81,7 +91,8 @@ export function AtalhoDeCaptura({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const aba = pathname.split("/")[3] ?? "";
-  const atalho = POR_ABA[aba];
+  const atalho =
+    aba === "documentacao" && searchParams.get("ver") === "arquivos" ? ARQUIVOS : POR_ABA[aba];
   const prazoNoTexto = extrairPrazoDeclarado(texto);
 
   // Na conversa o composer já está ali embaixo; nas configurações não faz sentido.
@@ -154,17 +165,20 @@ export function AtalhoDeCaptura({
 
   async function enviarArquivos(lista: FileList) {
     setSalvando(true);
-    const { falhas } = await capturarArquivos({
+    const { falhas, aviso } = await capturarArquivos({
       obraId,
       arquivos: Array.from(lista),
       faseAtualId,
       kind: atalho.kind,
+      contexto: atalho.kind ? undefined : await carregarContexto(obraId),
     });
     setSalvando(false);
     fechar();
 
-    if (falhas.length > 0) {
-      setErroDeEnvio(`Não consegui enviar: ${falhas.join(", ")}`);
+    const problema =
+      falhas.length > 0 ? `Não consegui enviar: ${falhas.join(", ")}` : aviso;
+    if (problema) {
+      setErroDeEnvio(problema);
       setTimeout(() => setErroDeEnvio(null), 5000);
     }
     router.refresh();
@@ -194,7 +208,7 @@ export function AtalhoDeCaptura({
       <input
         ref={fileInputRef}
         type="file"
-        accept={atalho.kind === "E8_orcamento" ? "application/pdf,image/*" : "image/*,video/*"}
+        accept={atalho.aceita}
         multiple
         className="hidden"
         onChange={(e) => {
@@ -208,7 +222,7 @@ export function AtalhoDeCaptura({
           <>
             <p className="mb-3 rounded-card bg-primary-soft p-3 text-micro text-ink-soft">
               Isso vira uma mensagem na conversa, como qualquer outra — só já
-              marcada como {RÓTULO_TIPO[atalho.kind]}.
+              marcada como {atalho.kind ? RÓTULO_TIPO[atalho.kind] : "arquivo"}.
             </p>
 
             {atalho.kind === "E7_pagamento" && (

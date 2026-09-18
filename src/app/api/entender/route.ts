@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
-import { ESQUEMA_ENTENDIMENTO, montarPrompt, type Entendimento } from "@/lib/entender";
+import {
+  ESQUEMA_ENTENDIMENTO,
+  formatoDoMime,
+  montarPrompt,
+  type Entendimento,
+} from "@/lib/entender";
 
 /**
  * Mini-proxy do modelo de IA (07_ARQUITETURA_TECNICA §2): a chave vive só aqui,
@@ -32,11 +37,13 @@ const MODELO_RAPIDO = "gemini-3.1-flash-lite";
  * IMAGEM é o contrário. Na mesma foto de obra: o lite respondeu em 3,2s e o
  * bom em 43,2s, com a MESMA classificação — e foto é a captura mais comum,
  * então 40s e cota a mais por foto sairia caro sem ganho. O lite vem primeiro.
+ *
+ * PDF segue a imagem (D148): é texto impresso, sem o problema de ouvir jargão.
  */
 function modelosPara(mime: string): string[] {
-  return mime.startsWith("image/")
-    ? [MODELO_RAPIDO, MODELO_BOM]
-    : [MODELO_BOM, MODELO_RAPIDO];
+  return mime.startsWith("audio/")
+    ? [MODELO_BOM, MODELO_RAPIDO]
+    : [MODELO_RAPIDO, MODELO_BOM];
 }
 /**
  * O limite real não é tempo, é o corpo da requisição: a Vercel recusa acima de
@@ -55,7 +62,7 @@ const TETO_TOTAL_MS = 50_000;
 const TETO_POR_TENTATIVA_MS = 35_000;
 const MINIMO_PARA_TENTAR_MS = 8_000;
 
-const TIPOS_ACEITOS = /^(audio|image)\//;
+const TIPOS_ACEITOS = /^(audio\/|image\/|application\/pdf$)/;
 
 export async function POST(request: Request) {
   // A rota gasta cota paga: só para quem está autenticado de verdade. O
@@ -104,7 +111,7 @@ export async function POST(request: Request) {
           { inline_data: { mime_type: arquivo.type, data: base64 } },
           {
             text: montarPrompt({
-              ehAudio: arquivo.type.startsWith("audio/"),
+              formato: formatoDoMime(arquivo.type),
               hoje,
               fases,
               favorecidos,

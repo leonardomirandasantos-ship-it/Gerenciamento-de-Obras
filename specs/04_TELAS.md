@@ -124,6 +124,10 @@ com re-envio (via sugestão) preservando histórico.
 
 ## Tela 7 — Documentação (diário) — galeria
 **Objetivo:** achar registro visual por **fase e data**; diário de obra. (JC-6)
+**Duas metades (D148):** toggle **Fotos · Arquivos** no topo, com contagem.
+"Fotos" é a galeria descrita abaixo. "Arquivos" é a antiga Tela 14: orçamentos,
+contratos, projetos, notas (tudo o que não é pagamento). Endereço
+`?ver=arquivos&filtro=orcamentos|outros`.
 **Estrutura:** header + busca; **filtros por fase** (pills: Todas · Estrutura ·
 Hidráulica · Elétrica · Acabamento + fases custom); fotos **agrupadas por fase**
 (e/ou data) com contador; cada foto pode exibir **legenda** (opcional) e chip de
@@ -213,7 +217,10 @@ favorecido. Edite ou organize quando quiser."
 
 ---
 
-## Tela 14 — Orçamentos
+## Tela 14 — Orçamentos → metade "Arquivos" da Documentação (D148)
+*Não é mais tela própria: `/orcamentos` redireciona para a Documentação. Filtros
+Todos · Orçamentos · Outros; cada orçamento mostra fornecedor, total, itens e o
+estado "fechado" ("fechei com esse", que não cria gasto).*
 **Objetivo:** arquivar e buscar orçamentos por fornecedor ou produto. (E8, D29)
 **Estrutura:** header + busca "Buscar por fornecedor ou produto"; toggle **Por
 produto / Por fornecedor**; cards de orçamento (ícone PDF, "Produto — Fornecedor",

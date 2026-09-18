@@ -195,10 +195,16 @@ export async function capturarArquivos({
 
     await supabase.from("anexos").insert({ evento_id: evento.id, url: path, tipo });
 
-    // Só imagem, e só quando o tipo não foi declarado por ela: se ela disse
+    // Imagem e PDF, e só quando o tipo não foi declarado por ela: se ela disse
     // que é foto de obra, não cabe a IA discordar.
-    if (tipo === "foto" && contexto && !kind) {
-      const resultado = await entenderImagem(supabase, obraId, faseAtualId, evento.id, file, contexto);
+    if ((tipo === "foto" || tipo === "pdf") && contexto && !kind) {
+      // PDF grande não passa pelo limite de corpo da função (~4,5 MB): fica
+      // com a classificação pelo nome, que é o comportamento de antes.
+      if (file.size > LIMITE_PARA_LER) {
+        aviso = aviso ?? "Guardei o PDF, mas ele é grande demais para eu ler sozinho.";
+        continue;
+      }
+      const resultado = await entenderArquivo(supabase, obraId, faseAtualId, evento.id, file, contexto);
       entendidos += resultado.aplicados;
       aviso = aviso ?? resultado.aviso;
     }
@@ -207,13 +213,18 @@ export async function capturarArquivos({
   return { falhas, entendidos, aviso };
 }
 
+const LIMITE_PARA_LER = 4 * 1024 * 1024;
+
 /**
- * Aplica o entendimento na própria imagem: o comprovante É a evidência do
+ * Aplica o entendimento no próprio arquivo: o comprovante É a evidência do
  * pagamento (D5), então ele não vira um registro separado — o evento da foto
  * passa a ser o gasto. Assunto a mais no mesmo arquivo (nota com material,
  * por exemplo) vira registro derivado apontando de volta.
+ *
+ * PDF é sempre UM registro (D148): o orçamento é o próprio arquivo, e itens
+ * orçados não são pendências dela — virariam listas que ninguém pediu.
  */
-async function entenderImagem(
+async function entenderArquivo(
   supabase: ReturnType<typeof createClient>,
   obraId: string,
   faseAtualId: string | null,
@@ -227,16 +238,27 @@ async function entenderImagem(
   const registros = entendimento.registros ?? [];
   if (registros.length === 0) return { aplicados: 0 };
 
-  const [principal, ...extras] = registros;
+  const ehPdf = arquivo.type === "application/pdf";
+  const [principal, ...demais] = registros;
+  const extras = ehPdf ? [] : demais;
   const kind = kindDoTipo(principal.tipo);
   if (!kind) return { aplicados: 0 };
 
   const payload: Record<string, unknown> = { fileName: arquivo.name };
-  if (kind === "E7_pagamento" || kind === "E8_orcamento") {
+  // "unclassified" também guarda valor e nome: quando ela tocar "é gasto" no
+  // card de dúvida, o pagamento já nasce preenchido.
+  if (kind === "E7_pagamento" || kind === "E8_orcamento" || kind === "unclassified") {
     if (typeof principal.valor === "number") payload.amount = principal.valor;
     if (principal.favorecido) payload.payeeName = principal.favorecido;
   }
-  if (principal.prazo) payload.date = principal.prazo;
+  if (kind === "E8_orcamento") {
+    // A lista de orçamentos busca por fornecedor e produto.
+    if (principal.favorecido) payload.supplier = principal.favorecido;
+    const itens = principal.itens?.filter(Boolean) ?? [];
+    if (itens.length > 0) payload.items = itens;
+  }
+  // Validade de orçamento não é prazo dela: em PDF, data não vira prazo.
+  if (principal.prazo && !ehPdf) payload.date = principal.prazo;
 
   const vinculo =
     kind === "E7_pagamento"
@@ -247,10 +269,10 @@ async function entenderImagem(
     .from("eventos")
     .update({
       kind,
-      confidence: 0.9,
+      confidence: kind === "unclassified" ? 0 : 0.9,
       favorecido_id: vinculo.favorecido_id ?? null,
       caption: principal.texto,
-      edited: true,
+      edited: kind !== "unclassified",
       payload: semVazios({ ...payload, payeeType: vinculo.payeeType }),
     })
     .eq("id", eventoId);
@@ -304,12 +326,30 @@ export type ContextoDaObra = {
 
 /** Mensagem por causa: "falhou" sem motivo obriga a adivinhar (D129). */
 const MOTIVOS: Record<string, string> = {
-  sem_chave: "O áudio está salvo, mas a transcrição ainda não está configurada.",
-  modelo_falhou: "O áudio está salvo, mas o serviço de transcrição recusou o arquivo.",
-  resposta_vazia: "O áudio está salvo, mas a transcrição voltou vazia.",
-  json_invalido: "O áudio está salvo, mas não entendi a resposta da transcrição.",
-  "não autenticado": "Sua sessão expirou. Entre de novo e mande o áudio outra vez.",
+  sem_chave: "Ficou salvo, mas a leitura automática ainda não está configurada.",
+  modelo_falhou: "Ficou salvo, mas o serviço de leitura recusou o arquivo.",
+  resposta_vazia: "Ficou salvo, mas a leitura voltou vazia.",
+  json_invalido: "Ficou salvo, mas não entendi a resposta da leitura.",
+  "não autenticado": "Sua sessão expirou. Entre de novo e mande outra vez.",
 };
+
+/**
+ * O mesmo contexto que a conversa monta no servidor, buscado no cliente: o
+ * atalho "+" das lentes vive no layout e não recebe esses dados de graça.
+ * Só é chamado no envio — nunca a cada troca de aba.
+ */
+export async function carregarContexto(obraId: string): Promise<ContextoDaObra> {
+  const supabase = createClient();
+  const [{ data: fases }, { data: favorecidos }] = await Promise.all([
+    supabase.from("fases").select("name").eq("obra_id", obraId),
+    supabase.from("favorecidos").select("name").eq("obra_id", obraId),
+  ]);
+  return {
+    fases: (fases ?? []).map((fase) => fase.name as string),
+    favorecidos: (favorecidos ?? []).map((f) => f.name as string),
+    ambientes: [],
+  };
+}
 
 export type ResultadoDoAudio = {
   transcricao: string;

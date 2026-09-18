@@ -116,7 +116,7 @@ export default async function ResumoPage({ params }: { params: Promise<{ id: str
         </Link>
 
         <Link
-          href={`/obras/${id}/orcamentos`}
+          href={`/obras/${id}/documentacao?ver=arquivos&filtro=orcamentos`}
           className="flex flex-1 items-center justify-between rounded-card bg-surface p-4 shadow-card active:bg-surface-alt"
         >
           <span>

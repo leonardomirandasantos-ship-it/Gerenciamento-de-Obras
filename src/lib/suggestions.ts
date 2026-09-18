@@ -229,6 +229,28 @@ export function detectarSugestoes(
       !casoSilenciado("F_classificar", registros) &&
       !jaResolvida("F_classificar", evento.id, registros)
     ) {
+      // PDF em dúvida (D148): a pergunta é só uma — o dinheiro já saiu? As
+      // opções de texto (pendência, decisão) não fazem sentido para arquivo.
+      const nomeDoArquivo = (evento.payload as { fileName?: string }).fileName ?? "";
+      if (/\.pdf$/i.test(nomeDoArquivo)) {
+        sugestoes.push({
+          caso: "F_classificar",
+          eventoId: evento.id,
+          gatilho: "Não deu para saber se esse PDF já foi pago",
+          proposta: "É um orçamento ou um gasto?",
+          porque:
+            "Gasto entra no total da obra. Orçamento fica guardado em Documentação › Arquivos.",
+          acaoLabel: "Classificar",
+          opcoes: [
+            { label: "Orçamento", valor: "E8_orcamento" },
+            { label: "Gasto", valor: "E7_pagamento" },
+            { label: "Outro documento", valor: "E5_documento" },
+          ],
+          dados: {},
+        });
+        continue;
+      }
+
       sugestoes.push({
         caso: "F_classificar",
         eventoId: evento.id,

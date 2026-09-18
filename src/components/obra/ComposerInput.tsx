@@ -99,14 +99,16 @@ export function ComposerInput({
 
     // A bolha otimista diz "lendo" quando a imagem vai passar pela IA: ela
     // fica visível durante os ~30s da leitura, igual acontece com o áudio.
-    const vaiLer = lista.some((file) => file.type.startsWith("image/"));
+    const ehPdf = (file: File) => file.type === "application/pdf";
+    const notaDeLeitura = (file: File) =>
+      file.type.startsWith("image/") ? "lendo a imagem…" : ehPdf(file) ? "lendo o PDF…" : undefined;
 
     for (const file of lista) {
       onPendente({
         id: crypto.randomUUID(),
         texto: legenda || `📎 ${file.name}`,
         kind: classificarTexto(legenda || file.name).kind,
-        nota: vaiLer && file.type.startsWith("image/") ? "lendo a imagem…" : undefined,
+        nota: notaDeLeitura(file),
       });
     }
 
@@ -127,7 +129,7 @@ export function ComposerInput({
     if (resultado.aviso) setAvisoAudio(resultado.aviso);
     else if (resultado.entendidos > 0) {
       setAvisoAudio(
-        `Li a imagem e preenchi ${resultado.entendidos} ${resultado.entendidos === 1 ? "registro" : "registros"}.`,
+        `Li ${lista.every(ehPdf) ? "o PDF" : lista.some(ehPdf) ? "os arquivos" : "a imagem"} e preenchi ${resultado.entendidos} ${resultado.entendidos === 1 ? "registro" : "registros"}.`,
       );
     }
     if (resultado.aviso || resultado.entendidos > 0) {
