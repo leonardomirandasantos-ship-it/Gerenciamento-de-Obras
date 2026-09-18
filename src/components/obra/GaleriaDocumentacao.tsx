@@ -86,7 +86,7 @@ function VisorFoto({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/95">
-      <div className="flex items-center justify-between p-4 text-white">
+      <div className="flex items-center justify-between px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] text-white">
         <button type="button" onClick={onFechar} aria-label="Fechar">
           ✕
         </button>
@@ -139,20 +139,14 @@ function VisorFoto({
         )}
       </div>
 
-      <div className="space-y-3 bg-surface p-4">
+      {/* safe-bottom: o visor ocupa a tela inteira, e sem isso o último botão
+          ficava embaixo da barra do iPhone — "muito no canto" (D146). */}
+      <div className="safe-bottom space-y-3 bg-surface px-4 pt-4">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-ink-soft">Fase</label>
+          <label className="text-xs font-medium text-ink-soft">
+            Fase {faseId ? "· toque de novo para tirar" : "· opcional"}
+          </label>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => salvarFase(null)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
-                !faseId ? "border-primary bg-primary text-white" : "border-line text-ink-soft"
-              }`}
-            >
-              Sem fase
-            </button>
-
             {fases.map((fase) => (
               <button
                 key={fase.id}
@@ -230,38 +224,6 @@ function VisorFoto({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-line pt-3">
-          {confirmandoExclusao ? (
-            <>
-              <span className="mr-auto text-micro text-ink-soft">
-                Some daqui e da conversa.
-              </span>
-              <button
-                type="button"
-                onClick={() => setConfirmandoExclusao(false)}
-                className="text-caption text-ink-soft"
-              >
-                cancelar
-              </button>
-              <button
-                type="button"
-                onClick={excluir}
-                className="rounded-card bg-alert px-3 py-2 font-display text-caption font-semibold text-white"
-              >
-                Excluir foto
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmandoExclusao(true)}
-              className="text-caption font-semibold text-alert"
-            >
-              🗑 excluir foto
-            </button>
-          )}
-        </div>
-
         {fotos.length > 1 && (
           <div className="flex gap-2 overflow-x-auto pt-1">
             {fotos.map((item) => (
@@ -278,6 +240,40 @@ function VisorFoto({
               </button>
             ))}
           </div>
+        )}
+
+        {/* Excluir por último e em largura cheia: longe do canto, alcançável
+            com o polegar, e depois de tudo que é navegação. */}
+        {confirmandoExclusao ? (
+          <div className="space-y-2 border-t border-line pt-3">
+            <p className="text-center text-micro text-ink-soft">
+              A foto some daqui e da conversa.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmandoExclusao(false)}
+                className="flex-1 rounded-card border border-line py-3 font-display text-caption font-semibold text-ink-soft"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={excluir}
+                className="flex-1 rounded-card bg-alert py-3 font-display text-caption font-semibold text-white"
+              >
+                Excluir foto
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmandoExclusao(true)}
+            className="w-full rounded-card border border-line py-3 font-display text-caption font-semibold text-alert"
+          >
+            🗑 Excluir foto
+          </button>
         )}
       </div>
     </div>
@@ -318,9 +314,7 @@ export function GaleriaDocumentacao({
   const visiveis =
     faseFiltro === "todas"
       ? fotos
-      : faseFiltro === "sem-fase"
-        ? fotos.filter((foto) => !foto.evento.phase_id)
-        : fotos.filter((foto) => foto.evento.phase_id === faseFiltro);
+      : fotos.filter((foto) => foto.evento.phase_id === faseFiltro);
 
   if (fotos.length === 0) {
     return (
@@ -348,7 +342,6 @@ export function GaleriaDocumentacao({
         {[
           { id: "todas", name: "Todas" },
           ...fases.map((fase) => ({ id: fase.id, name: fase.name })),
-          { id: "sem-fase", name: "Sem fase" },
         ].map((opcao) => (
           <button
             key={opcao.id}
