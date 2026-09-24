@@ -103,12 +103,15 @@ export function EventBubble({
   obraId,
   faseAtualId,
   contexto,
+  progresso,
 }: {
   evento: Evento;
   onEditar: () => void;
   obraId?: string;
   faseAtualId?: string | null;
   contexto?: ContextoDaObra;
+  /** Quanto já foi marcado da lista que esta mensagem originou (D158). */
+  progresso?: { feitos: number; total: number };
 }) {
   const prazo = (evento.payload as { date?: string }).date;
   const vindoDeAudio = Boolean(
@@ -186,9 +189,26 @@ export function EventBubble({
 
       {evento.caption && <p className="text-micro text-ink-soft">{evento.caption}</p>}
 
-      <div className="flex items-center gap-2 text-micro text-ink-soft">
+      <div className="flex flex-wrap items-center gap-2 text-micro text-ink-soft">
         <span>{new Date(evento.received_at).toLocaleString("pt-BR")}</span>
         {vindoDeAudio && <span>· 🎙️ do áudio</span>}
+        {/* O estado volta para a mensagem que ela mandou, em vez de virar uma
+          segunda mensagem no feed (D158). */}
+        {progresso && progresso.total > 0 && (
+          <span
+            className="chip"
+            style={
+              {
+                "--chip":
+                  progresso.feitos === progresso.total ? "var(--done)" : "var(--pending)",
+              } as React.CSSProperties
+            }
+          >
+            {progresso.feitos === progresso.total
+              ? "✓ tudo feito"
+              : `✓ ${progresso.feitos} de ${progresso.total}`}
+          </span>
+        )}
         {prazo && (
           <span className="chip" style={{ "--chip": "var(--info)" } as React.CSSProperties}>
             📅 {new Date(`${prazo}T00:00:00`).toLocaleDateString("pt-BR")}

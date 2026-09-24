@@ -10,6 +10,7 @@ import { ChipTipo } from "./ChipTipo";
 import { SeletorFaseAtual } from "./SeletorFaseAtual";
 import type { ContextoDaObra } from "@/lib/capturar";
 import type { Sugestao } from "@/lib/suggestions";
+import type { ProgressoDaLista } from "@/lib/conversa";
 import type { Evento, EventoKind, Fase } from "@/lib/types";
 
 /** `nota` substitui o "enviando…" quando a espera tem outro motivo. */
@@ -18,6 +19,7 @@ export type Pendente = { id: string; texto: string; kind: EventoKind; nota?: str
 export function ConversaClient({
   obraId,
   eventos,
+  progressos = {},
   fases,
   sugestoes,
   faseAtualId,
@@ -25,6 +27,8 @@ export function ConversaClient({
 }: {
   obraId: string;
   eventos: Evento[];
+  /** Quanto já foi marcado de cada lista, pela mensagem que a originou. */
+  progressos?: Record<string, ProgressoDaLista>;
   fases: Fase[];
   sugestoes: Sugestao[];
   faseAtualId: string | null;
@@ -108,6 +112,7 @@ export function ConversaClient({
             <li key={evento.id} id={`evento-${evento.id}`} className="space-y-2">
               <EventBubble
                 evento={evento}
+                progresso={progressos[evento.id]}
                 onEditar={() => setEditando(evento)}
                 obraId={obraId}
                 faseAtualId={faseAtualId}

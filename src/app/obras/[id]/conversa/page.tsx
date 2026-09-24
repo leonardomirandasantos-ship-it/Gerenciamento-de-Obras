@@ -3,6 +3,7 @@ import { ConversaClient } from "@/components/obra/ConversaClient";
 import { detectarSugestoes } from "@/lib/suggestions";
 import { carregarEventosComAnexos } from "@/lib/carregarEventos";
 import { ambientesDaObra } from "@/lib/ambientes";
+import { eventosDaConversa, progressoDasListas } from "@/lib/conversa";
 import type { Fase, SugestaoRegistro } from "@/lib/types";
 
 export default async function ConversaPage({
@@ -39,7 +40,8 @@ export default async function ConversaPage({
   return (
     <ConversaClient
       obraId={id}
-      eventos={eventos}
+      eventos={eventosDaConversa(eventos)}
+      progressos={progressoDasListas(eventos)}
       fases={fases ?? []}
       sugestoes={sugestoes}
       faseAtualId={obra?.current_phase_id ?? null}
