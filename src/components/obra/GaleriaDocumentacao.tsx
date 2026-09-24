@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { criarFase } from "@/lib/fases";
+import { paraBusca, textoDeBuscaDoArquivo } from "@/lib/nomeDoArquivo";
 import { BotaoEncaminhar } from "./BotaoEncaminhar";
 import { EditarFase } from "./EditarFase";
 import type { Evento, Fase } from "@/lib/types";
@@ -292,6 +293,7 @@ export function GaleriaDocumentacao({
 }) {
   const router = useRouter();
   const [faseFiltro, setFaseFiltro] = useState<string>("todas");
+  const [busca, setBusca] = useState("");
   const [aberta, setAberta] = useState<FotoItem | null>(null);
   const [criandoFase, setCriandoFase] = useState(false);
   const [nomeDaFase, setNomeDaFase] = useState("");
@@ -315,10 +317,17 @@ export function GaleriaDocumentacao({
       .map((anexo) => ({ evento, url: anexo.url, anexoId: anexo.id })),
   );
 
-  const visiveis =
+  // A foto tem texto mesmo sem legenda: a IA descreve o que ela mostra
+  // ("Laje do térreo", "Prumadas do banheiro"), e é isso que a busca acha
+  // (D166). Mesma normalização dos arquivos: acento não atrapalha.
+  const termo = paraBusca(busca.trim());
+  const daFase =
     faseFiltro === "todas"
       ? fotos
       : fotos.filter((foto) => foto.evento.phase_id === faseFiltro);
+  const visiveis = termo
+    ? daFase.filter((foto) => textoDeBuscaDoArquivo(foto.evento).includes(termo))
+    : daFase;
 
   if (fotos.length === 0) {
     return (
@@ -362,6 +371,10 @@ export function GaleriaDocumentacao({
         ))}
       </div>
 
+      {visiveis.length === 0 && (
+        <p className="text-sm text-ink-soft">Nenhuma foto com esse termo.</p>
+      )}
+
       {criandoFase && (
         <div className="flex gap-2">
           <input
@@ -388,6 +401,13 @@ export function GaleriaDocumentacao({
         </div>
       )}
 
+      <input
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        placeholder="Buscar por legenda ou pelo que aparece na foto"
+        className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
+      />
+
       {/* Com uma fase selecionada, o "editar" aparece ali mesmo (D147): é onde
           ela percebe que a fase está errada, e não nas Configurações. */}
       <div className="flex items-center justify-between gap-2">
@@ -409,7 +429,7 @@ export function GaleriaDocumentacao({
       {editandoFase && faseSelecionada && (
         <EditarFase
           fase={faseSelecionada}
-          fotosNaFase={visiveis.length}
+          fotosNaFase={daFase.length}
           onFechar={() => setEditandoFase(false)}
           onExcluida={() => {
             setEditandoFase(false);

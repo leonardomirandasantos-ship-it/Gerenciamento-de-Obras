@@ -135,7 +135,7 @@ preservando histórico.
 ---
 
 ## Tela 7 — Documentação (diário) — galeria
-**Objetivo:** achar registro visual por **fase e data**; diário de obra. (JC-6)
+**Objetivo:** achar registro visual por **fase, busca e data**; diário de obra. (JC-6)
 **Duas metades (D148):** toggle **Fotos · Arquivos** no topo, com contagem.
 "Fotos" é a galeria descrita abaixo. "Arquivos" é a antiga Tela 14: orçamentos,
 contratos, projetos, notas (tudo o que não é pagamento). Endereço

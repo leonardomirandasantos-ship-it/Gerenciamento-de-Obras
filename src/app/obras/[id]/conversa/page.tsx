@@ -27,6 +27,7 @@ export default async function ConversaPage({
     eventos,
     (registros ?? []) as SugestaoRegistro[],
     favorecidos ?? [],
+    (fases ?? []) as Fase[],
   );
 
   // O que a obra já usa vai junto no pedido de transcrição: assim o modelo

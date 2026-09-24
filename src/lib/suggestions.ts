@@ -29,6 +29,9 @@ export type Sugestao = {
 
 const REGEX_TITULO_VALOR = /^(.{3,40}?)\s*[:–—-]\s*(.+)$/;
 
+/** Janela do lote de "sem fase": recente o bastante para ser a fase de agora. */
+const DIAS_DE_ORFAOS = 30;
+
 export function extrairTituloEValor(texto: string): { title: string; value: string } {
   const primeiraLinha = texto.split("\n")[0].trim();
   const achou = primeiraLinha.match(REGEX_TITULO_VALOR);
@@ -56,8 +59,9 @@ const PRIORIDADE: Record<CasoSugestao, number> = {
   E_prestador: 3,
   D_decisao: 4,
   F_classificar: 5,
-  G_fechar_dia: 6,
-  A_checklist: 7,
+  I_fase: 6,
+  G_fechar_dia: 7,
+  A_checklist: 8,
 };
 
 export function ordenarPorPrioridade(sugestoes: Sugestao[]): Sugestao[] {
@@ -96,9 +100,47 @@ export function detectarSugestoes(
    * (D133). Quem já respondeu uma vez não deve responder de novo.
    */
   favorecidosComTipo: { name: string; type: string | null }[] = [],
+  /** Fases da obra, para poder oferecer onde jogar o que ficou sem fase. */
+  fases: { id: string; name: string }[] = [],
 ): Sugestao[] {
   const sugestoes: Sugestao[] = [];
   const checklists = eventos.filter((e) => e.kind === "E2_checklist");
+
+  // Registro sem fase (D167). A fase atual gruda no que chega DEPOIS dela
+  // (D69), então o que entrou antes de existir fase fica órfão para sempre:
+  // some da rosca do resumo e do filtro da documentação, e não tem como
+  // arrumar senão abrindo um por um.
+  //
+  // Só os RECENTES entram no lote. Jogar o arquivo inteiro numa fase com um
+  // toque é rápido e quase sempre errado — registro de três meses atrás não é
+  // da fase de agora —, e erraria justamente o gasto por fase, que é número
+  // que ela mostra para o cliente. O que é antigo continua editável um a um.
+  const limite = new Date();
+  limite.setDate(limite.getDate() - DIAS_DE_ORFAOS);
+  const corte = limite.toISOString();
+
+  const semFase = eventos.filter(
+    (evento) => !evento.phase_id && evento.received_at >= corte,
+  );
+
+  if (
+    fases.length > 0 &&
+    semFase.length >= 3 &&
+    !casoSilenciado("I_fase", registros) &&
+    !jaResolvida("I_fase", semFase[0].id, registros)
+  ) {
+    sugestoes.push({
+      caso: "I_fase",
+      eventoId: semFase[0].id,
+      gatilho: `${semFase.length} registros recentes estão sem fase`,
+      proposta: "Em qual fase eles entram?",
+      porque:
+        "São os dos últimos 30 dias. Sem fase eles ficam de fora da rosca do resumo e do filtro da documentação; depois dá para mudar um a um pelo editar.",
+      acaoLabel: "Escolher fase",
+      opcoes: fases.map((fase) => ({ label: fase.name, valor: fase.id })),
+      dados: { eventoIds: semFase.map((evento) => evento.id) },
+    });
+  }
 
   const jaTipados = new Set(
     favorecidosComTipo

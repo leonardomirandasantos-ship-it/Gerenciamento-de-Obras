@@ -60,7 +60,8 @@ export type CasoSugestao =
   | "E_prestador"
   | "F_classificar"
   | "G_fechar_dia"
-  | "H_pagamento_incompleto";
+  | "H_pagamento_incompleto"
+  | "I_fase";
 
 export type EstadoSugestao = "detected" | "offered" | "accepted" | "ignored" | "silenced";
 

@@ -17,11 +17,13 @@ export default async function PendenciasPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [eventos, { data: registros }, { data: favorecidos }] = await Promise.all([
-    carregarEventosComAnexos(supabase, id, undefined, { assinar: false }),
-    supabase.from("sugestoes").select("*").eq("obra_id", id),
-    supabase.from("favorecidos").select("name, type").eq("obra_id", id),
-  ]);
+  const [eventos, { data: registros }, { data: favorecidos }, { data: fases }] =
+    await Promise.all([
+      carregarEventosComAnexos(supabase, id, undefined, { assinar: false }),
+      supabase.from("sugestoes").select("*").eq("obra_id", id),
+      supabase.from("favorecidos").select("name, type").eq("obra_id", id),
+      supabase.from("fases").select("id, name").eq("obra_id", id).order("order"),
+    ]);
 
   // Uma fila só (D150): lista, checklist e registro com prazo no mesmo lugar,
   // na ordem de quem cobra primeiro. A seção "Com prazo" que existia aqui
@@ -36,7 +38,12 @@ export default async function PendenciasPage({
   // Limito a 5 aqui (o componente mostra 1 por vez): com dados reais a engine
   // detecta 10+ e vira ruído (D25/D122).
   const sugestoes = ordenarPorPrioridade(
-    detectarSugestoes(eventos, (registros ?? []) as SugestaoRegistro[], favorecidos ?? []),
+    detectarSugestoes(
+      eventos,
+      (registros ?? []) as SugestaoRegistro[],
+      favorecidos ?? [],
+      fases ?? [],
+    ),
   ).slice(0, 5);
   const porEvento = new Map(eventos.map((evento) => [evento.id, evento]));
 

@@ -34,6 +34,7 @@ export function resumoDaObra(
   eventos: Evento[],
   registros: SugestaoRegistro[],
   favorecidos: { name: string; type: string | null }[],
+  fases: { id: string; name: string }[] = [],
   hoje = hojeIso(),
 ): ResumoDaObra {
   const prazos = prazosAbertos(eventos, hoje);
@@ -44,7 +45,7 @@ export function resumoDaObra(
     vencemHoje: prazos.filter((prazo) => prazo.situacao === "hoje").length,
     primeiro: cobrando[0]?.texto,
     itensEmAberto: itensAComprar(eventos),
-    paraOrganizar: detectarSugestoes(eventos, registros, favorecidos).length,
+    paraOrganizar: detectarSugestoes(eventos, registros, favorecidos, fases).length,
   };
 }
 
@@ -107,11 +108,13 @@ export async function carregarResumos(
   const resumos = new Map<string, ResumoDaObra>();
   if (obraIds.length === 0) return resumos;
 
-  const [{ data: eventos }, { data: registros }, { data: favorecidos }] = await Promise.all([
-    supabase.from("eventos").select("*").in("obra_id", obraIds).eq("deleted", false),
-    supabase.from("sugestoes").select("*").in("obra_id", obraIds),
-    supabase.from("favorecidos").select("obra_id, name, type").in("obra_id", obraIds),
-  ]);
+  const [{ data: eventos }, { data: registros }, { data: favorecidos }, { data: fases }] =
+    await Promise.all([
+      supabase.from("eventos").select("*").in("obra_id", obraIds).eq("deleted", false),
+      supabase.from("sugestoes").select("*").in("obra_id", obraIds),
+      supabase.from("favorecidos").select("obra_id, name, type").in("obra_id", obraIds),
+      supabase.from("fases").select("obra_id, id, name").in("obra_id", obraIds).order("order"),
+    ]);
 
   const hoje = hojeIso();
 
@@ -122,6 +125,9 @@ export async function carregarResumos(
         ((eventos ?? []) as Evento[]).filter((evento) => evento.obra_id === obraId),
         ((registros ?? []) as SugestaoRegistro[]).filter((r) => r.obra_id === obraId),
         ((favorecidos ?? []) as { obra_id: string; name: string; type: string | null }[]).filter(
+          (f) => f.obra_id === obraId,
+        ),
+        ((fases ?? []) as { obra_id: string; id: string; name: string }[]).filter(
           (f) => f.obra_id === obraId,
         ),
         hoje,

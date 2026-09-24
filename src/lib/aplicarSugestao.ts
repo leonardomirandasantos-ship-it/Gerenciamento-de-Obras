@@ -107,6 +107,13 @@ export async function aplicarSugestao(
       .eq("id", evento.id);
   }
 
+  if (sugestao.caso === "I_fase" && opcao) {
+    const ids = (sugestao.dados.eventoIds as string[] | undefined) ?? [];
+    if (ids.length > 0) {
+      await supabase.from("eventos").update({ phase_id: opcao }).in("id", ids);
+    }
+  }
+
   if (sugestao.caso === "H_pagamento_incompleto") {
     await supabase
       .from("eventos")
