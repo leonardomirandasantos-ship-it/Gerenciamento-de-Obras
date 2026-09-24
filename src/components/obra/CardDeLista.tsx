@@ -7,10 +7,11 @@ import { progressoChecklist } from "@/lib/checklist";
 import { formatarData } from "@/lib/datas";
 import { itensDaLista, prazoDaLista, situacaoDoPrazo, tituloDaLista } from "@/lib/pendencias";
 import { createClient } from "@/lib/supabase/client";
+import { tirarDasPendencias, voltarParaPendencias } from "@/lib/tirarLista";
 import { SwipeParaExcluir } from "./SwipeParaExcluir";
 import { VerNoChat } from "./VerNoChat";
 import { EditarLista } from "./EditarLista";
-import type { ChecklistItem, ChecklistPayload, Evento, ListaPayload } from "@/lib/types";
+import type { ChecklistItem, ChecklistPayload, Evento } from "@/lib/types";
 
 /** Chip de data do item e da lista, com o mesmo vocabulário do card da obra. */
 function ChipDePrazo({ data }: { data: string }) {
@@ -41,7 +42,9 @@ function ChipDePrazo({ data }: { data: string }) {
 export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string }) {
   const router = useRouter();
   const [editando, setEditando] = useState(false);
-  const [saiu, setSaiu] = useState(false);
+  /** null = na fila; "desfazer" = tirada, mostrando a volta; true = sumiu. */
+  const [saiu, setSaiu] = useState<false | "desfazer" | true>(false);
+  const sumico = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const ehChecklist = evento.kind === "E2_checklist";
   const payload = evento.payload as ChecklistPayload;
@@ -60,6 +63,7 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
   useEffect(() => () => {
     if (refreshAgendado.current) clearTimeout(refreshAgendado.current);
     if (conversaoAgendada.current) clearTimeout(conversaoAgendada.current);
+    if (sumico.current) clearTimeout(sumico.current);
   }, []);
 
   /**
@@ -147,43 +151,42 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
 
   /** Sai das pendências; a mensagem original continua na conversa (D3). */
   async function tirarDaLista() {
-    setSaiu(true);
-    // Se a conversão estava na fila, ela não acontece mais.
+    // A faixa de desfazer ocupa o lugar do card: o dedo dela ainda está ali.
+    setSaiu("desfazer");
     if (conversaoAgendada.current) clearTimeout(conversaoAgendada.current);
     jaConverteu.current = true;
-    const supabase = createClient();
 
-    if (ehChecklist) {
-      await supabase.from("eventos").update({ deleted: true }).eq("id", evento.id);
+    await tirarDasPendencias(evento);
+    router.refresh();
 
-      if (payload.sourceEventId) {
-        const { data: origem } = await supabase
-          .from("eventos")
-          .select("payload")
-          .eq("id", payload.sourceEventId)
-          .single();
+    sumico.current = setTimeout(() => setSaiu(true), 8000);
+  }
 
-        if (origem) {
-          const payloadOrigem = { ...((origem.payload ?? {}) as ListaPayload) };
-          delete payloadOrigem.linkedChecklistId;
-          payloadOrigem.dismissed = true;
-          await supabase
-            .from("eventos")
-            .update({ payload: payloadOrigem })
-            .eq("id", payload.sourceEventId);
-        }
-      }
-    } else {
-      await supabase
-        .from("eventos")
-        .update({ payload: { ...(evento.payload as ListaPayload), dismissed: true } })
-        .eq("id", evento.id);
-    }
-
+  async function desfazer() {
+    if (sumico.current) clearTimeout(sumico.current);
+    setSaiu(false);
+    await voltarParaPendencias(evento);
     router.refresh();
   }
 
-  if (saiu) return null;
+  if (saiu === true) return null;
+
+  if (saiu === "desfazer") {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-card border border-line bg-surface-alt px-4 py-3">
+        <span className="min-w-0 truncate text-caption text-ink-soft">
+          Tirada das pendências
+        </span>
+        <button
+          type="button"
+          onClick={desfazer}
+          className="shrink-0 font-display text-caption font-semibold text-primary underline"
+        >
+          desfazer
+        </button>
+      </div>
+    );
+  }
 
   return (
     <SwipeParaExcluir onExcluir={tirarDaLista} rotulo="Tirar">

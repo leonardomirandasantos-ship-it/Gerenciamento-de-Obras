@@ -1,12 +1,15 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { progressoChecklist } from "@/lib/checklist";
+import { voltarParaPendencias } from "@/lib/tirarLista";
 import { formatarDuracao } from "@/lib/audio";
 import { ChipTipo } from "./ChipTipo";
 import { BotaoEncaminhar } from "./BotaoEncaminhar";
 import { BotaoReentenderAudio } from "./BotaoReentenderAudio";
 import type { ContextoDaObra } from "@/lib/capturar";
-import type { AudioPayload, ChecklistPayload, DecisaoPayload, Evento } from "@/lib/types";
+import type { AudioPayload, ChecklistPayload, DecisaoPayload, Evento, ListaPayload } from "@/lib/types";
 
 function ConteudoChecklist({ evento }: { evento: Evento }) {
   const payload = evento.payload as ChecklistPayload;
@@ -97,6 +100,35 @@ function ConteudoAudio({
   );
 }
 
+/**
+ * A lista que saiu das pendências continua aqui, inteira, e a volta mora na
+ * própria mensagem (D165): recriar mandando de novo deixaria duas mensagens
+ * iguais na conversa, e o app com duas verdades sobre a mesma lista. O que
+ * estava marcado volta junto — o checklist é reaproveitado, não recriado.
+ */
+function VoltarParaPendencias({ evento }: { evento: Evento }) {
+  const router = useRouter();
+  const [voltando, setVoltando] = useState(false);
+
+  async function voltar() {
+    setVoltando(true);
+    const deuCerto = await voltarParaPendencias(evento);
+    if (!deuCerto) setVoltando(false);
+    router.refresh();
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={voltar}
+      disabled={voltando}
+      className="font-display text-micro font-semibold text-primary underline disabled:opacity-50"
+    >
+      {voltando ? "voltando…" : "voltar para pendências"}
+    </button>
+  );
+}
+
 export function EventBubble({
   evento,
   onEditar,
@@ -114,6 +146,8 @@ export function EventBubble({
   progresso?: { feitos: number; total: number };
 }) {
   const prazo = (evento.payload as { date?: string }).date;
+  const foraDasPendencias =
+    evento.kind === "E1_lista" && Boolean((evento.payload as ListaPayload).dismissed);
   const vindoDeAudio = Boolean(
     (evento.payload as { sourceCaptureEventId?: string; sourceAudioEventId?: string })
       .sourceCaptureEventId ??
@@ -194,6 +228,12 @@ export function EventBubble({
         {vindoDeAudio && <span>· 🎙️ do áudio</span>}
         {/* O estado volta para a mensagem que ela mandou, em vez de virar uma
           segunda mensagem no feed (D158). */}
+        {foraDasPendencias && (
+          <>
+            <span>· fora das pendências</span>
+            <VoltarParaPendencias evento={evento} />
+          </>
+        )}
         {progresso && progresso.total > 0 && (
           <span
             className="chip"

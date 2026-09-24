@@ -127,7 +127,8 @@ o grupo **"Concluídas (n)"** com as listas inteiramente marcadas (D155).
 **Estados:** vazio ("Suas listas viram checklists aqui."); concluído (recolhe/
 arquiva).
 **Interações:** tocar item → alterna falta/ok **na hora**, gravando por baixo
-(D152); adicionar nota (1 toque); fundir com re-envio (via sugestão)
+(D152); tirar da lista deixa uma faixa de **desfazer** por 8 s no lugar do card,
+e a volta permanente fica na bolha da conversa (D165); adicionar nota (1 toque); fundir com re-envio (via sugestão)
 preservando histórico.
 **Anti-goals:** campos obrigatórios por item; forçar data.
 
