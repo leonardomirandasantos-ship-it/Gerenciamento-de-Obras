@@ -18,6 +18,10 @@ const DEVE_QUEBRAR: [string, number][] = [
   ["comprar cal, cimento e areia hoje", 3],
   ["comprar 2,5 m de cano, 3 tijolos e 1 cola", 3],
   ["Comprar cimento areia", 2],
+  ["Comprar prego martelo e marreta que vem", 3],
+  // Vira "cimento" + "areia para o contrapiso": duas compras mesmo, e o
+  // rabicho fica no último item em vez de cancelar a quebra (D162).
+  ["comprar cimento e areia para o contrapiso", 2],
 ];
 
 const DEVE_FICAR_INTEIRO: string[] = [
@@ -55,7 +59,6 @@ const DEVE_FICAR_INTEIRO: string[] = [
   "14 Degraus 26x100",
   "Portas Pormax",
   "Mont blanc",
-  "comprar cimento e areia para o contrapiso",
   "Comprar cimento urgente",
   "levar as amostras de porcelanato pro cliente ver",
 ];

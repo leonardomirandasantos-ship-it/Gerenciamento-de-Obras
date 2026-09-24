@@ -31,6 +31,25 @@ function ehPalavraSimples(pedaco: string): boolean {
   return PALAVRA_SIMPLES.test(limpo) && !PALAVRA_DE_FRASE.has(limpo.toLowerCase());
 }
 
+/**
+ * O trecho INICIAL de palavras simples é a relação; o que vier depois gruda no
+ * último item (D162). "Comprar prego martelo e marreta que vem" tem que dar
+ * três itens — exigir que a linha inteira fosse limpa fazia um "que vem" no
+ * fim cancelar a quebra toda.
+ */
+function corridaDePalavras(palavras: string[], minimo: number): string[] | null {
+  let corte = 0;
+  while (corte < palavras.length && ehPalavraSimples(palavras[corte])) corte += 1;
+
+  if (corte < minimo) return null;
+
+  const itens = palavras.slice(0, corte);
+  const cauda = palavras.slice(corte).join(" ");
+  if (cauda) itens[itens.length - 1] = `${itens[itens.length - 1]} ${cauda}`;
+
+  return itens;
+}
+
 /** Fragmentos iguais são repetição de frase ("Concreto muros e muros"). */
 function temRepetido(pedacos: string[]): boolean {
   const vistos = new Set(pedacos.map((p) => p.toLowerCase()));
@@ -72,12 +91,10 @@ function palavrasSoltas(texto: string): string[] {
 function porVerboDeCompra(texto: string): string[] | null {
   if (!VERBO_DE_COMPRA.test(texto)) return null;
 
-  const palavras = palavrasSoltas(texto);
-  if (palavras.length < 2 || palavras.length > 6) return null;
-  if (!palavras.every(ehPalavraSimples)) return null;
-  if (temRepetido(palavras)) return null;
+  const itens = corridaDePalavras(palavrasSoltas(texto), 2);
+  if (!itens || itens.length > 8 || temRepetido(itens)) return null;
 
-  return palavras;
+  return itens;
 }
 
 /**
@@ -90,12 +107,10 @@ function porVerboDeCompra(texto: string): string[] | null {
 function porConectorEntrePalavras(texto: string): string[] | null {
   if (!CONECTOR.test(texto)) return null;
 
-  const palavras = palavrasSoltas(texto);
-  if (palavras.length < 3 || palavras.length > 6) return null;
-  if (!palavras.every(ehPalavraSimples)) return null;
-  if (temRepetido(palavras)) return null;
+  const itens = corridaDePalavras(palavrasSoltas(texto), 3);
+  if (!itens || itens.length > 8 || temRepetido(itens)) return null;
 
-  return palavras;
+  return itens;
 }
 
 /**
