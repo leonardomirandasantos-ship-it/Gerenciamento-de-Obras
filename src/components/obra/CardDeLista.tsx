@@ -56,10 +56,31 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
   const [versao, setVersao] = useState(evento.updated_at);
   const [gravando, setGravando] = useState(0);
   const refreshAgendado = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const conversaoAgendada = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const jaConverteu = useRef(false);
 
   useEffect(() => () => {
     if (refreshAgendado.current) clearTimeout(refreshAgendado.current);
+    if (conversaoAgendada.current) clearTimeout(conversaoAgendada.current);
   }, []);
+
+  /**
+   * Lista crua vira checklist UMA vez só, com o que ela marcou até parar de
+   * tocar (D160). Converter a cada toque criava um checklist por item — três
+   * toques rápidos deixavam três checklists iguais no banco, e a aba de
+   * pendências mostrava o mesmo card três vezes.
+   */
+  function agendarConversao(finais: ChecklistItem[]) {
+    if (jaConverteu.current) return;
+    if (conversaoAgendada.current) clearTimeout(conversaoAgendada.current);
+
+    conversaoAgendada.current = setTimeout(async () => {
+      if (jaConverteu.current) return;
+      jaConverteu.current = true;
+      await criarChecklistDeLista(evento, obraId, finais);
+      router.refresh();
+    }, 500);
+  }
 
   // Quando o servidor manda uma versão nova (edição pela folha, fusão de
   // status) o card acompanha — mas nunca no meio de uma gravação, senão a
@@ -98,37 +119,40 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
   }
 
   async function alternarItem(indice: number) {
+    const novos = itens.map((item, i) =>
+      i === indice
+        ? { ...item, status: item.status === "ok" ? ("falta" as const) : ("ok" as const) }
+        : item,
+    );
+
     if (!ehChecklist) {
-      // Primeiro toque numa lista crua: ela vira checklist agora.
-      setItens(itens.map((item, i) => (i === indice ? { ...item, status: "ok" } : item)));
-      await criarChecklistDeLista(evento, obraId, indice);
-      router.refresh();
+      // Lista crua: marca na hora e a conversão sai depois que a mão parar.
+      setItens(novos);
+      agendarConversao(novos);
       return;
     }
 
-    await gravar(
-      itens.map((item, i) =>
-        i === indice
-          ? { ...item, status: item.status === "ok" ? ("falta" as const) : ("ok" as const) }
-          : item,
-      ),
-    );
+    await gravar(novos);
   }
 
   async function concluirTudo() {
+    const todos = itens.map((item) => ({ ...item, status: "ok" as const }));
+
     if (!ehChecklist) {
-      setItens(itens.map((item) => ({ ...item, status: "ok" })));
-      await criarChecklistDeLista(evento, obraId, "todos");
-      router.refresh();
+      setItens(todos);
+      agendarConversao(todos);
       return;
     }
 
-    await gravar(itens.map((item) => ({ ...item, status: "ok" as const })));
+    await gravar(todos);
   }
 
   /** Sai das pendências; a mensagem original continua na conversa (D3). */
   async function tirarDaLista() {
     setSaiu(true);
+    // Se a conversão estava na fila, ela não acontece mais.
+    if (conversaoAgendada.current) clearTimeout(conversaoAgendada.current);
+    jaConverteu.current = true;
     const supabase = createClient();
 
     if (ehChecklist) {

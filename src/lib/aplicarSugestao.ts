@@ -2,7 +2,7 @@ import { createClient } from "./supabase/client";
 import { fundirStatus, itensParaChecklist } from "./checklist";
 import { normalizarFavorecido, type PagamentoPayload } from "./pagamento";
 import type { Sugestao } from "./suggestions";
-import type { ChecklistPayload, Evento, ListaPayload } from "./types";
+import type { ChecklistItem, ChecklistPayload, Evento, ListaPayload } from "./types";
 
 /**
  * Devolve o erro em vez de engolir (D119): quando o registro não grava, a
@@ -39,15 +39,22 @@ export async function ignorarSugestao(sugestao: Sugestao, obraId: string) {
 export async function criarChecklistDeLista(
   evento: Evento,
   obraId: string,
-  marcarItem?: number | "todos",
-) {
+  /**
+   * Índice marcado, "todos", ou os itens já no estado final. O card manda os
+   * itens prontos porque ela pode marcar três antes da conversão terminar —
+   * mandar só um índice perdia os outros dois (D160).
+   */
+  marcarItem?: number | "todos" | ChecklistItem[],
+): Promise<string | null> {
   const supabase = createClient();
   const rawText = evento.raw_text ?? "";
-  const itens = itensParaChecklist(rawText).map((item, indice) =>
-    marcarItem === "todos" || indice === marcarItem
-      ? { ...item, status: "ok" as const }
-      : item,
-  );
+  const itens = Array.isArray(marcarItem)
+    ? marcarItem
+    : itensParaChecklist(rawText).map((item, indice) =>
+        marcarItem === "todos" || indice === marcarItem
+          ? { ...item, status: "ok" as const }
+          : item,
+      );
 
   const payload: ChecklistPayload = {
     title: `Lista de ${new Date(evento.received_at).toLocaleDateString("pt-BR")}`,
@@ -73,16 +80,15 @@ export async function criarChecklistDeLista(
     .select("id")
     .single();
 
-  if (checklist) {
-    const payloadLista: ListaPayload = {
-      ...(evento.payload as ListaPayload),
-      linkedChecklistId: checklist.id,
-    };
-    await supabase
-      .from("eventos")
-      .update({ payload: payloadLista })
-      .eq("id", evento.id);
-  }
+  if (!checklist) return null;
+
+  const payloadLista: ListaPayload = {
+    ...(evento.payload as ListaPayload),
+    linkedChecklistId: checklist.id,
+  };
+  await supabase.from("eventos").update({ payload: payloadLista }).eq("id", evento.id);
+
+  return checklist.id;
 }
 
 export async function aplicarSugestao(

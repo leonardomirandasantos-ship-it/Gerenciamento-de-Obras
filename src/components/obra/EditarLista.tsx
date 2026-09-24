@@ -53,9 +53,21 @@ export function EditarLista({
   }
 
   async function salvar() {
+    const prazoAnterior = payload.date;
+    const trocouPrazo = (prazo || undefined) !== prazoAnterior;
+
     const limpos = linhas
       .map((item) => ({ ...item, text: item.text.trim() }))
-      .filter((item) => item.text !== "");
+      .filter((item) => item.text !== "")
+      // O item herdou a data da mesma frase da lista ("comprar cal pra hoje").
+      // Se ela troca o prazo, essa cópia velha não pode sobreviver: o card
+      // passava a mostrar duas datas e o app continuava cobrando pela antiga
+      // (D161). Data que ela escreveu diferente da lista continua valendo.
+      .map((item) =>
+        trocouPrazo && item.date && item.date === prazoAnterior
+          ? { ...item, date: undefined }
+          : item,
+      );
 
     if (limpos.length === 0 || salvando) return;
 

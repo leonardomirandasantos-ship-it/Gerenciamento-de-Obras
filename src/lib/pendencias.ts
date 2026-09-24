@@ -29,14 +29,53 @@ export function prazoDaLista(evento: Evento): string | undefined {
 }
 
 /**
+ * Um checklist por lista de origem (D160). Houve um período em que marcar
+ * itens rápido numa lista crua criava um checklist por toque; o banco ficou
+ * com cópias, e a aba mostrava o mesmo card três vezes. Vale o que a lista
+ * aponta em `linkedChecklistId`; sem isso, o mais novo.
+ */
+function semDuplicados(checklists: Evento[], eventos: Evento[]): Evento[] {
+  const apontados = new Set(
+    eventos
+      .map((evento) => (evento.payload as ListaPayload).linkedChecklistId)
+      .filter(Boolean),
+  );
+
+  const porOrigem = new Map<string, Evento>();
+  const soltos: Evento[] = [];
+
+  for (const checklist of checklists) {
+    const origem = (checklist.payload as ChecklistPayload).sourceEventId;
+    if (!origem) {
+      soltos.push(checklist);
+      continue;
+    }
+
+    const atual = porOrigem.get(origem);
+    if (!atual) {
+      porOrigem.set(origem, checklist);
+      continue;
+    }
+
+    const venceOAtual =
+      apontados.has(atual.id) ||
+      (!apontados.has(checklist.id) && atual.created_at >= checklist.created_at);
+    if (!venceOAtual) porOrigem.set(origem, checklist);
+  }
+
+  return [...porOrigem.values(), ...soltos];
+}
+
+/**
  * Listas abertas da obra, checklist e lista crua na mesma cesta (D76).
  * Uma lista só sai daqui quando é tirada explicitamente (`dismissed`).
  * O filtro tolera vínculo órfão — dado antigo apontando para checklist que
  * não existe mais voltaria a sumir das duas pontas (D73).
  */
 export function listasAbertas(eventos: Evento[]): Evento[] {
-  const checklists = eventos.filter((evento) => evento.kind === "E2_checklist");
-  const idsDeChecklists = new Set(checklists.map((checklist) => checklist.id));
+  const todosOsChecklists = eventos.filter((evento) => evento.kind === "E2_checklist");
+  const idsDeChecklists = new Set(todosOsChecklists.map((checklist) => checklist.id));
+  const checklists = semDuplicados(todosOsChecklists, eventos);
 
   const listasSoltas = eventos.filter((evento) => {
     if (evento.kind !== "E1_lista") return false;
