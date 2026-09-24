@@ -8,6 +8,8 @@ export type ObraDaLista = {
   name: string;
   location: string | null;
   photo_url: string | null;
+  photo_signed_url?: string | null;
+  photo_signed_until?: string | null;
   status: string;
   fases: { name: string; color: string }[] | { name: string; color: string } | null;
 };

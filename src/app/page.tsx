@@ -12,7 +12,9 @@ export default async function Home() {
   // Arquivada não some do app — some da lista do dia a dia (D95).
   const { data } = await supabase
     .from("obras")
-    .select("id, name, location, photo_url, status, fases:current_phase_id(name, color)")
+    .select(
+      "id, name, location, photo_url, photo_signed_url, photo_signed_until, status, fases:current_phase_id(name, color)",
+    )
     .order("created_at", { ascending: false });
 
   const obras = (data ?? []) as ObraDaLista[];
@@ -21,10 +23,7 @@ export default async function Home() {
 
   // A obra arquivada não cobra nada: o resumo é só das ativas.
   const [assinadas, resumos] = await Promise.all([
-    assinarCapas(
-      supabase,
-      obras.map((obra) => obra.photo_url),
-    ),
+    assinarCapas(supabase, obras),
     carregarResumos(
       supabase,
       ativas.map((obra) => obra.id),

@@ -79,6 +79,8 @@ export type Anexo = {
   id: string;
   evento_id: string;
   url: string;
+  /** Versão de 600px assinada, para listas e grades (D168). */
+  thumbUrl?: string;
   tipo: AnexoTipo;
   created_at: string;
 };

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { EventBubble } from "./EventBubble";
 import { ComposerInput } from "./ComposerInput";
 import { EditBottomSheet } from "./EditBottomSheet";
@@ -20,6 +21,8 @@ export function ConversaClient({
   obraId,
   eventos,
   progressos = {},
+  anteriores = 0,
+  proximaPagina,
   fases,
   sugestoes,
   faseAtualId,
@@ -29,6 +32,9 @@ export function ConversaClient({
   eventos: Evento[];
   /** Quanto já foi marcado de cada lista, pela mensagem que a originou. */
   progressos?: Record<string, ProgressoDaLista>;
+  /** Mensagens mais antigas que ficaram fora desta página (D169). */
+  anteriores?: number;
+  proximaPagina?: number;
   fases: Fase[];
   sugestoes: Sugestao[];
   faseAtualId: string | null;
@@ -108,6 +114,17 @@ export function ConversaClient({
         </div>
       ) : (
         <ul ref={feedRef} onScroll={aoRolar} className="flex-1 space-y-3 overflow-y-auto p-4">
+          {anteriores > 0 && proximaPagina && (
+            <li className="pb-1 text-center">
+              <Link
+                href={`?mensagens=${proximaPagina}`}
+                scroll={false}
+                className="text-caption text-primary underline"
+              >
+                ver as {anteriores} mensagens anteriores
+              </Link>
+            </li>
+          )}
           {eventos.map((evento) => (
             <li key={evento.id} id={`evento-${evento.id}`} className="space-y-2">
               <EventBubble

@@ -142,8 +142,9 @@ export default async function ResumoPage({ params }: { params: Promise<{ id: str
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 key={anexo.id}
-                src={anexo.url}
+                src={anexo.thumbUrl ?? anexo.url}
                 alt=""
+                loading="lazy"
                 className="h-16 w-16 shrink-0 rounded-card object-cover"
               />
             ))}

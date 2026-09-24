@@ -200,8 +200,9 @@ export function EventBubble({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 key={anexo.id}
-                src={anexo.url}
+                src={anexo.thumbUrl ?? anexo.url}
                 alt={evento.caption ?? ""}
+                loading="lazy"
                 className="h-32 w-32 rounded-card object-cover"
               />
             ) : anexo.tipo === "video" ? (

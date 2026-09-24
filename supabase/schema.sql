@@ -92,6 +92,12 @@ create table anexos (
   id uuid primary key default gen_random_uuid(),
   evento_id uuid not null references eventos(id) on delete cascade,
   url text not null,
+  -- Versão de 600px usada nas listas; o `url` é a de 1600px (D168).
+  thumb_url text,
+  -- URL assinada guardada para o navegador poder reaproveitar do cache.
+  signed_url text,
+  thumb_signed_url text,
+  signed_until timestamptz,
   tipo text not null check (tipo in ('foto', 'video', 'pdf', 'audio')),
   created_at timestamptz not null default now()
 );

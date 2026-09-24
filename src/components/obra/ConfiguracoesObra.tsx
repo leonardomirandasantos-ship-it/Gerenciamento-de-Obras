@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { caminhoDaCapa } from "@/lib/fotoObra";
+import { prepararImagem } from "@/lib/imagem";
 import { criarFase, excluirFase } from "@/lib/fases";
 import type { Fase, Obra } from "@/lib/types";
 
@@ -101,8 +102,13 @@ export function ConfiguracoesObra({
       return;
     }
 
-    const caminho = caminhoDaCapa(user.id, obra.id, file.name);
-    const { error } = await supabase.storage.from("anexos").upload(caminho, file);
+    // A capa nunca aparece maior que 48px: subir 4 MB para isso era o pior
+    // negócio do app (D168). Vai a miniatura.
+    const { cheia, miniatura } = await prepararImagem(file);
+    const capa = miniatura ?? cheia;
+
+    const caminho = caminhoDaCapa(user.id, obra.id, capa.name);
+    const { error } = await supabase.storage.from("anexos").upload(caminho, capa);
 
     if (!error) {
       await supabase.from("obras").update({ photo_url: caminho }).eq("id", obra.id);

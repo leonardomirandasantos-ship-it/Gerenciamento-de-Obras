@@ -6,6 +6,7 @@ import { mimeLimpo } from "./audio";
 import { paraWavMono16k } from "./wav";
 import { kindDoTipo, type Entendimento, type RegistroEntendido } from "./entender";
 import { classificar } from "./classify";
+import { prepararImagem } from "./imagem";
 import { precisaDeSegundaOpiniao } from "./checklist";
 import { extrairDadosPagamento } from "./pagamento";
 import type { AnexoTipo, EventoKind } from "./types";
@@ -206,24 +207,41 @@ export async function capturarArquivos({
   let aviso: string | undefined;
   const descricao = legenda?.trim() ?? "";
 
-  for (const file of arquivos) {
-    const tipo = tipoDoArquivo(file);
+  for (const original of arquivos) {
+    const tipo = tipoDoArquivo(original);
+
+    // Encolhe no celular, antes de subir (D168): é aqui que a demora que ela
+    // sente depois de tirar a foto some, e é aqui que o egress deixa de
+    // nascer. PDF, vídeo e áudio passam intactos.
+    const { cheia: file, miniatura } =
+      tipo === "foto"
+        ? await prepararImagem(original)
+        : { cheia: original, miniatura: null };
     // A legenda manda na classificação quando existe — "comprovante do Valdir"
     // diz muito mais que "IMG-20260610-WA0014.jpg". Sem legenda, vale o nome
     // do arquivo ("Orçamento 335396.pdf" → E8).
     const automatico = classificar({
-      texto: descricao || file.name,
+      texto: descricao || original.name,
       temFoto: tipo === "foto",
       temVideo: tipo === "video",
       temPdf: tipo === "pdf",
       temAudio: tipo === "audio",
     });
 
-    const path = `${user.id}/${obraId}/${Date.now()}-${chaveSegura(file.name)}`;
+    const base = `${user.id}/${obraId}/${Date.now()}`;
+    const path = `${base}-${chaveSegura(file.name)}`;
     const { error: erroUpload } = await supabase.storage.from("anexos").upload(path, file);
     if (erroUpload) {
-      falhas.push(file.name);
+      falhas.push(original.name);
       continue;
+    }
+
+    // A miniatura é conveniência: se falhar, a lista mostra a cheia.
+    let thumbPath: string | null = null;
+    if (miniatura) {
+      const caminho = `${base}-${chaveSegura(miniatura.name)}`;
+      const { error } = await supabase.storage.from("anexos").upload(caminho, miniatura);
+      if (!error) thumbPath = caminho;
     }
 
     const { data: evento } = await supabase
@@ -236,7 +254,7 @@ export async function capturarArquivos({
         edited: Boolean(kind),
         caption: descricao || null,
         payload: semVazios({
-          fileName: file.name,
+          fileName: original.name,
           ...(automatico.kind === "E7_pagamento" && descricao
             ? extrairDadosPagamento(descricao)
             : {}),
@@ -250,7 +268,9 @@ export async function capturarArquivos({
       continue;
     }
 
-    await supabase.from("anexos").insert({ evento_id: evento.id, url: path, tipo });
+    await supabase
+      .from("anexos")
+      .insert({ evento_id: evento.id, url: path, thumb_url: thumbPath, tipo });
 
     // Imagem e PDF, e só quando o tipo não foi declarado por ela: se ela disse
     // que é foto de obra, não cabe a IA discordar.

@@ -88,8 +88,9 @@ export function ListaDecisoes({
                 return (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={foto.url}
+                    src={foto.thumbUrl ?? foto.url}
                     alt=""
+                    loading="lazy"
                     className="h-16 w-16 shrink-0 rounded-card object-cover"
                   />
                 );

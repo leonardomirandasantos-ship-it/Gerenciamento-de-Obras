@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { caminhoDaCapa } from "@/lib/fotoObra";
+import { prepararImagem } from "@/lib/imagem";
 
 export default function NovaObraPage() {
   const router = useRouter();
@@ -65,10 +66,12 @@ export default function NovaObraPage() {
       } = await supabase.auth.getUser();
 
       if (user) {
-        const caminho = caminhoDaCapa(user.id, data.id, capa.name);
+        const { cheia, miniatura } = await prepararImagem(capa);
+        const imagem = miniatura ?? cheia;
+        const caminho = caminhoDaCapa(user.id, data.id, imagem.name);
         const { error: erroUpload } = await supabase.storage
           .from("anexos")
-          .upload(caminho, capa);
+          .upload(caminho, imagem);
 
         if (!erroUpload) {
           await supabase.from("obras").update({ photo_url: caminho }).eq("id", data.id);

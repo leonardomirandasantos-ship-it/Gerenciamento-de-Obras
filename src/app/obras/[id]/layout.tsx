@@ -21,7 +21,9 @@ export default async function ObraLayout({
   // custava ~200ms em cada troca de aba.
   const { data: obra } = await supabase
     .from("obras")
-    .select("id, name, location, photo_url, current_phase_id, status")
+    .select(
+      "id, name, location, photo_url, photo_signed_url, photo_signed_until, current_phase_id, status",
+    )
     .eq("id", id)
     .single();
 
@@ -29,7 +31,7 @@ export default async function ObraLayout({
     notFound();
   }
 
-  const capa = urlDaCapa(obra.photo_url, await assinarCapas(supabase, [obra.photo_url]));
+  const capa = urlDaCapa(obra.photo_url, await assinarCapas(supabase, [obra]));
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">

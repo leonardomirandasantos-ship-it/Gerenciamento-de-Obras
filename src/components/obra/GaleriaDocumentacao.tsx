@@ -12,7 +12,10 @@ import type { Evento, Fase } from "@/lib/types";
 
 type FotoItem = {
   evento: Evento;
+  /** Cheia (1600px): só o visor e o encaminhar usam. */
   url: string;
+  /** Miniatura (600px): é o que a grade e a tira de baixo mostram (D168). */
+  thumbUrl: string;
   anexoId: string;
 };
 
@@ -238,7 +241,7 @@ function VisorFoto({
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.url} alt="" className="h-12 w-12 object-cover" />
+                <img src={item.thumbUrl} alt="" className="h-12 w-12 object-cover" />
               </button>
             ))}
           </div>
@@ -314,7 +317,12 @@ export function GaleriaDocumentacao({
   const fotos: FotoItem[] = eventos.flatMap((evento) =>
     (evento.anexos ?? [])
       .filter((anexo) => anexo.tipo === "foto")
-      .map((anexo) => ({ evento, url: anexo.url, anexoId: anexo.id })),
+      .map((anexo) => ({
+        evento,
+        url: anexo.url,
+        thumbUrl: anexo.thumbUrl ?? anexo.url,
+        anexoId: anexo.id,
+      })),
   );
 
   // A foto tem texto mesmo sem legenda: a IA descreve o que ela mostra
@@ -448,8 +456,9 @@ export function GaleriaDocumentacao({
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={foto.url}
+              src={foto.thumbUrl}
               alt={foto.evento.caption ?? ""}
+              loading="lazy"
               className="h-full w-full object-cover"
             />
             {foto.evento.caption && (

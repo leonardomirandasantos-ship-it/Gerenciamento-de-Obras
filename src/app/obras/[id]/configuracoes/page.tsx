@@ -21,7 +21,7 @@ export default async function ConfiguracoesPage({
     notFound();
   }
 
-  const capa = urlDaCapa(obra.photo_url, await assinarCapas(supabase, [obra.photo_url]));
+  const capa = urlDaCapa(obra.photo_url, await assinarCapas(supabase, [obra]));
 
   return <ConfiguracoesObra obra={obra as Obra} fases={(fases ?? []) as Fase[]} capa={capa} />;
 }
