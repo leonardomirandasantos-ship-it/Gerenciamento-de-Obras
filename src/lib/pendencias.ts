@@ -1,4 +1,4 @@
-import { itensParaChecklist, progressoChecklist } from "./checklist";
+import { itensParaChecklist, parseItemComStatus, progressoChecklist } from "./checklist";
 import { descricaoDoEvento } from "./descricao";
 import type { ChecklistItem, ChecklistPayload, Evento, ListaPayload } from "./types";
 
@@ -20,6 +20,12 @@ export function itensDaLista(evento: Evento): ChecklistItem[] {
   if (evento.kind === "E2_checklist") {
     return (evento.payload as ChecklistPayload).items ?? [];
   }
+
+  // Itens que a IA separou depois, quando a regra local ficou na dúvida
+  // (D164). Só existem quando a segunda opinião valeu a pena.
+  const daSegundaOpiniao = (evento.payload as ListaPayload).items;
+  if (daSegundaOpiniao?.length) return daSegundaOpiniao.map(parseItemComStatus);
+
   return itensParaChecklist(evento.raw_text ?? "");
 }
 

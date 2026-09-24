@@ -135,6 +135,30 @@ export function separarEnumeracao(linha: string): string[] {
   return pedacos && pedacos.length >= 2 ? pedacos : [original];
 }
 
+/**
+ * Quando a regra local não quebrou mas a linha cheira a relação de coisas
+ * (D164). É o gatilho da segunda opinião da IA — e só isso: quem decide o que
+ * aparece na tela na hora continua sendo a regra local, que é instantânea.
+ *
+ * A porta é: uma linha só, curta, com verbo de compra ou conector ou vírgula,
+ * e pelo menos três palavras de conteúdo. Fora disso não vale gastar chamada.
+ */
+export function precisaDeSegundaOpiniao(texto: string): boolean {
+  const linhas = texto.split("\n").map((linha) => linha.trim()).filter(Boolean);
+  if (linhas.length !== 1) return false;
+
+  const linha = linhas[0];
+  if (linha.length > 120) return false;
+  if (extrairItensDeLista(linha).length > 1) return false;
+  if (REGEX_NOTA.test(linha)) return false;
+
+  const cheiraLista =
+    VERBO_DE_COMPRA.test(linha) || CONECTOR.test(linha) || VIRGULA_DE_LISTA.test(linha);
+  if (!cheiraLista) return false;
+
+  return palavrasSoltas(removerMencaoDeData(linha)).length >= 3;
+}
+
 /** Cada linha não vazia é um item. Não parseia em colunas (Fluxo 1, anti-goal). */
 export function extrairItensDeLista(texto: string): string[] {
   return texto

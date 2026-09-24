@@ -6,6 +6,7 @@ import { mimeLimpo } from "./audio";
 import { paraWavMono16k } from "./wav";
 import { kindDoTipo, type Entendimento, type RegistroEntendido } from "./entender";
 import { classificar } from "./classify";
+import { precisaDeSegundaOpiniao } from "./checklist";
 import { extrairDadosPagamento } from "./pagamento";
 import type { AnexoTipo, EventoKind } from "./types";
 
@@ -71,12 +72,49 @@ async function ligarFavorecidoExistente(
   return { favorecido_id: achado.id, payeeType: achado.type ?? undefined };
 }
 
+/**
+ * Segunda opinião da IA sobre a quebra em itens (D164). Roda DEPOIS de a
+ * mensagem já estar salva e na tela: a captura não espera por isto, e se a
+ * chamada falhar ou demorar, nada acontece — a lista fica com a quebra local.
+ *
+ * Só sobrescreve quando a IA devolve mais de um item; devolver um item só é o
+ * mesmo que concordar com a regra local.
+ */
+async function pedirSegundaOpiniao(
+  eventoId: string,
+  texto: string,
+  payload: Record<string, unknown>,
+): Promise<boolean> {
+  try {
+    const resposta = await fetch("/api/itens", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ texto }),
+    });
+    if (!resposta.ok) return false;
+
+    const { itens } = (await resposta.json()) as { itens?: string[] };
+    if (!Array.isArray(itens) || itens.length < 2) return false;
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("eventos")
+      .update({ payload: { ...payload, items: itens } })
+      .eq("id", eventoId);
+
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 export async function capturarTexto({
   obraId,
   texto,
   faseAtualId,
   kind,
   payloadExtra,
+  aoRefinar,
 }: {
   obraId: string;
   texto: string;
@@ -84,6 +122,8 @@ export async function capturarTexto({
   /** Vindo do atalho: o usuário já declarou o tipo, não há o que adivinhar. */
   kind?: EventoKind;
   payloadExtra?: Record<string, unknown>;
+  /** Chamado se a segunda opinião mudar a lista depois de ela já estar na tela. */
+  aoRefinar?: () => void;
 }) {
   const supabase = createClient();
   const automatico = classificarTexto(texto);
@@ -100,17 +140,34 @@ export async function capturarTexto({
       ? await ligarFavorecidoExistente(supabase, obraId, payload.payeeName as string | undefined)
       : {};
 
-  await supabase.from("eventos").insert({
-    obra_id: obraId,
-    kind: tipoFinal,
-    confidence: kind ? 1 : automatico.confidence,
-    raw_text: texto,
-    phase_id: faseAtualId,
-    favorecido_id: vinculo.favorecido_id ?? null,
-    // Tipo declarado pelo usuário: não reabrir sugestão de classificação.
-    edited: Boolean(kind),
-    payload: semVazios({ ...payload, payeeType: vinculo.payeeType ?? payload.payeeType }),
+  const payloadFinal = semVazios({
+    ...payload,
+    payeeType: vinculo.payeeType ?? payload.payeeType,
   });
+
+  const { data: evento } = await supabase
+    .from("eventos")
+    .insert({
+      obra_id: obraId,
+      kind: tipoFinal,
+      confidence: kind ? 1 : automatico.confidence,
+      raw_text: texto,
+      phase_id: faseAtualId,
+      favorecido_id: vinculo.favorecido_id ?? null,
+      // Tipo declarado pelo usuário: não reabrir sugestão de classificação.
+      edited: Boolean(kind),
+      payload: payloadFinal,
+    })
+    .select("id")
+    .single();
+
+  // Sem `await`: a mensagem já está na tela e a espera seria sentida. Se a
+  // segunda opinião valer alguma coisa, o card se ajeita sozinho depois.
+  if (evento && tipoFinal === "E1_lista" && precisaDeSegundaOpiniao(texto)) {
+    void pedirSegundaOpiniao(evento.id, texto, payloadFinal).then((mudou) => {
+      if (mudou) aoRefinar?.();
+    });
+  }
 }
 
 /** Devolve os nomes que não subiram, para a tela poder avisar (D102). */

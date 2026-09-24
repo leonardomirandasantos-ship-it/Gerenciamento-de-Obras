@@ -58,7 +58,13 @@ export function ComposerInput({
     });
     setEnviando(true);
 
-    await capturarTexto({ obraId, texto: conteudo, faseAtualId });
+    await capturarTexto({
+      obraId,
+      texto: conteudo,
+      faseAtualId,
+      // A lista já apareceu; se a IA separar melhor os itens, a tela acompanha.
+      aoRefinar: () => router.refresh(),
+    });
 
     setEnviando(false);
     router.refresh();

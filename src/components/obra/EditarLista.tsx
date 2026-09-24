@@ -82,6 +82,28 @@ export function EditarLista({
           edited: true,
         })
         .eq("id", evento.id);
+
+      // O prazo é campo do aplicativo, não texto dela: se muda aqui, muda
+      // também na mensagem que originou a lista (D163). Senão a conversa
+      // continuava com o chip da data velha e as duas telas discordavam.
+      if (trocouPrazo && payload.sourceEventId) {
+        const { data: origem } = await supabase
+          .from("eventos")
+          .select("payload")
+          .eq("id", payload.sourceEventId)
+          .single();
+
+        if (origem) {
+          const payloadOrigem = { ...((origem.payload ?? {}) as ListaPayload & { date?: string }) };
+          if (prazo) payloadOrigem.date = prazo;
+          else delete payloadOrigem.date;
+
+          await supabase
+            .from("eventos")
+            .update({ payload: payloadOrigem })
+            .eq("id", payload.sourceEventId);
+        }
+      }
     } else {
       // Lista crua editada nasce como checklist, preservando o vínculo com a
       // mensagem de origem para poder religar se for excluída depois (D73).
@@ -106,11 +128,16 @@ export function EditarLista({
         .single();
 
       if (checklist) {
+        const payloadOrigem: ListaPayload & { date?: string } = {
+          ...(evento.payload as ListaPayload & { date?: string }),
+          linkedChecklistId: checklist.id,
+        };
+        if (prazo) payloadOrigem.date = prazo;
+        else delete payloadOrigem.date;
+
         await supabase
           .from("eventos")
-          .update({
-            payload: { ...(evento.payload as ListaPayload), linkedChecklistId: checklist.id },
-          })
+          .update({ payload: payloadOrigem })
           .eq("id", evento.id);
       }
     }
