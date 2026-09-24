@@ -6,42 +6,118 @@ const REGEX_STATUS_OK = /\s*\b(ok|feito|pronto|conclu[íi]do|comprado)\b\.?$/i;
 const REGEX_STATUS_FALTA = /\s*\b(n[ãa]o|falta|pendente)\b\.?$/i;
 const REGEX_NOTA = /^(.*?)\s+[-–—]\s+(.+)$/;
 
-const MAX_PALAVRAS_POR_ITEM = 5;
+/** Verbo de aquisição: o que vem depois dele é uma relação de coisas a obter. */
+const VERBO_DE_COMPRA = /^(?:comprar|compra|pedir|pedido de|encomendar|orçar|orcar|cotar)\b/i;
+
 const CONECTOR = /\s+\b(?:e|ou)\b\s+/i;
 /** Vírgula de lista, não de número: "2,5" e "R$ 1.250,00" ficam inteiros. */
 const VIRGULA_DE_LISTA = /,(?!\d)/;
 
 /**
- * "comprar cal, cimento e areia" vira três itens (D156).
- *
- * A porta é estreita de propósito: exige vírgula E conector ("A, B e C"), que
- * é como se enumera em português. Vírgula sozinha aparece em frase ("pix pro
- * José Costa, mão de obra da semana") e "e" sozinho aparece em nome ("Suítes 1
- * e 2", "Concreto muros e muros") — separar por um só dos dois picotava a
- * amostra real do WhatsApp. Pedaço comprido também barra: enumeração de obra é
- * curta, frase é longa.
- *
- * Isto NÃO é parsear lista em colunas (anti-goal do Fluxo 1): continua sendo
- * uma linha = um assunto; só se reconhece que o assunto tinha três coisas.
+ * Palavra que só faz sentido dentro de uma frase: se aparecer, a linha é frase
+ * e não relação. "comprar cimento e areia para o contrapiso" é uma compra só.
  */
-export function separarEnumeracao(linha: string): string[] {
-  const texto = linha.trim();
+const PALAVRA_DE_FRASE = new Set([
+  "de", "do", "da", "dos", "das", "para", "pra", "pro", "com", "em", "no", "na",
+  "nos", "nas", "ao", "aos", "à", "às", "o", "a", "os", "as", "um", "uma", "que",
+  "por", "sem", "sob", "até", "ate", "mais", "tudo", "isso", "urgente", "rápido",
+  "rapido", "logo", "favor", "ainda", "já", "ja", "também", "tambem",
+]);
 
-  if (!VIRGULA_DE_LISTA.test(texto)) return [texto];
-  if (!CONECTOR.test(texto)) return [texto];
-  // "Muro fundo - rebocar, pintar" é item com nota, não enumeração.
-  if (REGEX_NOTA.test(texto)) return [texto];
+const PALAVRA_SIMPLES = /^[a-zà-ÿ][a-zà-ÿ'-]{2,}$/i;
 
-  const partes = texto
+function ehPalavraSimples(pedaco: string): boolean {
+  const limpo = pedaco.trim();
+  return PALAVRA_SIMPLES.test(limpo) && !PALAVRA_DE_FRASE.has(limpo.toLowerCase());
+}
+
+/** Fragmentos iguais são repetição de frase ("Concreto muros e muros"). */
+function temRepetido(pedacos: string[]): boolean {
+  const vistos = new Set(pedacos.map((p) => p.toLowerCase()));
+  return vistos.size !== pedacos.length;
+}
+
+function porVirgulaEConector(texto: string): string[] | null {
+  if (!VIRGULA_DE_LISTA.test(texto) || !CONECTOR.test(texto)) return null;
+
+  const pedacos = texto
     .split(new RegExp(VIRGULA_DE_LISTA, "g"))
     .flatMap((parte) => parte.split(new RegExp(CONECTOR, "gi")))
     .map((parte) => parte.trim())
     .filter(Boolean);
 
-  if (partes.length < 2) return [texto];
-  if (partes.some((parte) => parte.split(/\s+/).length > MAX_PALAVRAS_POR_ITEM)) return [texto];
+  if (pedacos.length < 2 || pedacos.length > 8) return null;
+  if (pedacos.some((pedaco) => pedaco.split(/\s+/).length > 5)) return null;
+  return pedacos;
+}
 
-  return partes;
+/** Tokens da linha, com o conector fora e o verbo de compra fora. */
+function palavrasSoltas(texto: string): string[] {
+  return texto
+    .replace(VERBO_DE_COMPRA, "")
+    .split(/\s+/)
+    .map((palavra) => palavra.trim())
+    .filter((palavra) => palavra && !/^(?:e|ou)$/i.test(palavra));
+}
+
+/**
+ * "Comprar cal cimento pincel" e "Comprar areia pedra e brita" são três itens
+ * cada um. Quem pede material no celular não põe vírgula — exigir vírgula
+ * deixava a regra bonita e inútil (D159).
+ *
+ * O que autoriza separar por espaço é o VERBO DE COMPRA: depois de "comprar"
+ * vem uma relação de coisas. "Mudar Tomada churrasqueira" tem a mesma forma e
+ * é uma tarefa só, por isso o verbo precisa ser de aquisição, não qualquer um.
+ */
+function porVerboDeCompra(texto: string): string[] | null {
+  if (!VERBO_DE_COMPRA.test(texto)) return null;
+
+  const palavras = palavrasSoltas(texto);
+  if (palavras.length < 2 || palavras.length > 6) return null;
+  if (!palavras.every(ehPalavraSimples)) return null;
+  if (temRepetido(palavras)) return null;
+
+  return palavras;
+}
+
+/**
+ * "Brita areia e pedra", sem verbo nenhum. Aqui a porta é a mais estreita de
+ * todas — três ou mais palavras simples, sem repetir, ligadas por "e" —
+ * porque é a forma que mais parece frase: "Concreto muros e muros" (repete) e
+ * "Suítes 1 e 2" (número) são as duas da amostra real que precisam passar
+ * inteiras.
+ */
+function porConectorEntrePalavras(texto: string): string[] | null {
+  if (!CONECTOR.test(texto)) return null;
+
+  const palavras = palavrasSoltas(texto);
+  if (palavras.length < 3 || palavras.length > 6) return null;
+  if (!palavras.every(ehPalavraSimples)) return null;
+  if (temRepetido(palavras)) return null;
+
+  return palavras;
+}
+
+/**
+ * Uma linha pode conter vários itens. Isto NÃO é parsear lista em colunas
+ * (anti-goal do Fluxo 1): continua uma linha = um assunto; só se reconhece que
+ * o assunto trazia três coisas.
+ *
+ * A data sai antes de decidir — "Comprar areia tijolo e pedra pra hoje" tem
+ * que ser julgada como "Comprar areia tijolo e pedra". O prazo não se perde:
+ * ele já está no campo `date` da lista e é herdado pelo checklist (D157).
+ */
+export function separarEnumeracao(linha: string): string[] {
+  const original = linha.trim();
+  // "Muro fundo - rebocar, pintar" é item com nota, não relação.
+  if (REGEX_NOTA.test(original)) return [original];
+
+  const texto = removerMencaoDeData(original);
+
+  const pedacos =
+    porVirgulaEConector(texto) ?? porVerboDeCompra(texto) ?? porConectorEntrePalavras(texto);
+
+  return pedacos && pedacos.length >= 2 ? pedacos : [original];
 }
 
 /** Cada linha não vazia é um item. Não parseia em colunas (Fluxo 1, anti-goal). */
