@@ -1,85 +1,135 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { criarChecklistDeLista } from "@/lib/aplicarSugestao";
 import { extrairItensDeLista, progressoChecklist } from "@/lib/checklist";
 import { formatarData } from "@/lib/datas";
-import { prazoDaLista } from "@/lib/pendencias";
+import { prazoDaLista, situacaoDoPrazo, tituloDaLista } from "@/lib/pendencias";
 import { createClient } from "@/lib/supabase/client";
 import { SwipeParaExcluir } from "./SwipeParaExcluir";
 import { VerNoChat } from "./VerNoChat";
 import { EditarLista } from "./EditarLista";
 import type { ChecklistItem, ChecklistPayload, Evento, ListaPayload } from "@/lib/types";
 
+/** Chip de data do item e da lista, com o mesmo vocabulário do card da obra. */
+function ChipDePrazo({ data }: { data: string }) {
+  const situacao = situacaoDoPrazo(data);
+  const cobrando = situacao !== "futuro";
+
+  return (
+    <span
+      className="chip mt-1"
+      style={{ "--chip": cobrando ? "var(--alert)" : "var(--info)" } as React.CSSProperties}
+    >
+      📅 {situacao === "atrasado" ? "atrasado · " : situacao === "hoje" ? "hoje · " : ""}
+      {formatarData(data)}
+    </span>
+  );
+}
+
 /**
  * Card único de lista/checklist. Para quem usa, é a mesma coisa: uma lista de
  * itens para ir marcando. A conversão para checklist acontece por baixo, no
  * primeiro toque — antes o card "sumia" de uma seção e reaparecia em outra no
  * fim da página, e parecia que não tinha criado nada.
+ *
+ * O check é otimista (D152): marca na hora e grava por baixo. Antes o item
+ * ficava desabilitado esperando o banco E o `router.refresh()` — dois
+ * segundos por item numa lista de dez era o que fazia a tela parecer travada.
  */
 export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string }) {
   const router = useRouter();
-  const [carregando, setCarregando] = useState(false);
   const [editando, setEditando] = useState(false);
+  const [saiu, setSaiu] = useState(false);
 
   const ehChecklist = evento.kind === "E2_checklist";
   const payload = evento.payload as ChecklistPayload;
 
-  const itens: ChecklistItem[] = ehChecklist
+  const itensDoServidor: ChecklistItem[] = ehChecklist
     ? (payload.items ?? [])
     : extrairItensDeLista(evento.raw_text ?? "").map((text) => ({
         text,
         status: "falta" as const,
       }));
 
+  const [itens, setItens] = useState(itensDoServidor);
+  const [versao, setVersao] = useState(evento.updated_at);
+  const [gravando, setGravando] = useState(0);
+  const refreshAgendado = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (refreshAgendado.current) clearTimeout(refreshAgendado.current);
+  }, []);
+
+  // Quando o servidor manda uma versão nova (edição pela folha, fusão de
+  // status) o card acompanha — mas nunca no meio de uma gravação, senão a
+  // resposta antiga volta por cima do que ela acabou de marcar.
+  if (evento.updated_at !== versao && gravando === 0) {
+    setVersao(evento.updated_at);
+    setItens(itensDoServidor);
+  }
+
   const { feitos, total } = progressoChecklist(itens);
-  const data = ehChecklist ? (payload.sourceListDate ?? evento.received_at) : evento.received_at;
+  const tudoFeito = total > 0 && feitos === total;
+  const prazo = prazoDaLista(evento);
+
+  async function gravar(novos: ChecklistItem[]) {
+    const anteriores = itens;
+    setItens(novos);
+    setGravando((quantas) => quantas + 1);
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("eventos")
+      .update({ payload: { ...payload, items: novos } })
+      .eq("id", evento.id);
+
+    setGravando((quantas) => quantas - 1);
+
+    if (error) {
+      setItens(anteriores);
+      return;
+    }
+
+    // Um refresh só, depois que a mão parou: recarregar a aba a cada item
+    // marcado era o que fazia a lista de dez itens parecer travada.
+    if (refreshAgendado.current) clearTimeout(refreshAgendado.current);
+    refreshAgendado.current = setTimeout(() => router.refresh(), 700);
+  }
 
   async function alternarItem(indice: number) {
-    if (carregando) return;
-    setCarregando(true);
-    const supabase = createClient();
-
     if (!ehChecklist) {
+      // Primeiro toque numa lista crua: ela vira checklist agora.
+      setItens(itens.map((item, i) => (i === indice ? { ...item, status: "ok" } : item)));
       await criarChecklistDeLista(evento, obraId, indice);
-    } else {
-      const novos = itens.map((item, i) =>
+      router.refresh();
+      return;
+    }
+
+    await gravar(
+      itens.map((item, i) =>
         i === indice
           ? { ...item, status: item.status === "ok" ? ("falta" as const) : ("ok" as const) }
           : item,
-      );
-      await supabase
-        .from("eventos")
-        .update({ payload: { ...payload, items: novos } })
-        .eq("id", evento.id);
-    }
-
-    setCarregando(false);
-    router.refresh();
+      ),
+    );
   }
 
   async function concluirTudo() {
-    setCarregando(true);
-    const supabase = createClient();
-
     if (!ehChecklist) {
+      setItens(itens.map((item) => ({ ...item, status: "ok" })));
       await criarChecklistDeLista(evento, obraId, "todos");
-    } else {
-      const novos = itens.map((item) => ({ ...item, status: "ok" as const }));
-      await supabase
-        .from("eventos")
-        .update({ payload: { ...payload, items: novos } })
-        .eq("id", evento.id);
+      router.refresh();
+      return;
     }
 
-    setCarregando(false);
-    router.refresh();
+    await gravar(itens.map((item) => ({ ...item, status: "ok" as const })));
   }
 
   /** Sai das pendências; a mensagem original continua na conversa (D3). */
   async function tirarDaLista() {
-    setCarregando(true);
+    setSaiu(true);
     const supabase = createClient();
 
     if (ehChecklist) {
@@ -109,19 +159,10 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
         .eq("id", evento.id);
     }
 
-    setCarregando(false);
     router.refresh();
   }
 
-  const tudoFeito = total > 0 && feitos === total;
-  const prazo = prazoDaLista(evento);
-
-  // "Vencendo" cobre hoje e o que já passou — os dois pedem a mesma atenção.
-  const hoje = new Date();
-  const hojeIso = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-${String(
-    hoje.getDate(),
-  ).padStart(2, "0")}`;
-  const vencendo = Boolean(prazo && prazo <= hojeIso);
+  if (saiu) return null;
 
   return (
     <SwipeParaExcluir onExcluir={tirarDaLista} rotulo="Tirar">
@@ -129,7 +170,7 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
         <div className="space-y-1">
           <div className="flex items-baseline justify-between gap-2">
             <p className="min-w-0 truncate font-display text-body font-bold text-ink">
-              Lista de {new Date(data).toLocaleDateString("pt-BR")}
+              {tituloDaLista(evento)}
             </p>
             <span className="shrink-0 font-display text-caption font-bold text-done">
               {feitos}/{total}
@@ -137,16 +178,8 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
           </div>
 
           {/* Prazo no topo, junto do título: é o que faz o card ser
-              priorizado na lista (D117). Vence hoje ou já venceu, vira alerta. */}
-          {prazo && (
-            <span
-              className="chip"
-              style={{ "--chip": vencendo ? "var(--alert)" : "var(--info)" } as React.CSSProperties}
-            >
-              📅 {vencendo ? "para " : ""}
-              {formatarData(prazo)}
-            </span>
-          )}
+              priorizado na fila (D117). */}
+          {prazo && <ChipDePrazo data={prazo} />}
           <div className="h-1.5 overflow-hidden rounded-full bg-surface-alt">
             <div
               className="h-full rounded-full bg-done transition-all"
@@ -161,11 +194,10 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
               <button
                 type="button"
                 onClick={() => alternarItem(indice)}
-                disabled={carregando}
-                className="flex w-full items-start gap-2 text-left disabled:opacity-60"
+                className="flex w-full items-start gap-2 py-1 text-left"
               >
                 <span
-                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[11px] ${
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[11px] transition-colors ${
                     item.status === "ok"
                       ? "border-done bg-done text-white"
                       : "border-pending text-transparent"
@@ -182,14 +214,7 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
                     {item.text}
                   </span>
                   {item.note && <span className="block text-micro text-ink-soft">{item.note}</span>}
-                  {item.date && (
-                    <span
-                      className="chip mt-1"
-                      style={{ "--chip": "var(--info)" } as React.CSSProperties}
-                    >
-                      📅 {formatarData(item.date)}
-                    </span>
-                  )}
+                  {item.date && item.status !== "ok" && <ChipDePrazo data={item.date} />}
                 </span>
               </button>
             </li>
@@ -214,7 +239,7 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
           <button
             type="button"
             onClick={concluirTudo}
-            disabled={carregando || tudoFeito}
+            disabled={tudoFeito}
             className="flex-1 rounded-card border border-done px-3 py-2.5 font-display text-caption font-semibold text-done disabled:opacity-40"
           >
             {tudoFeito ? "Tudo feito" : "✓ Concluir tudo"}
@@ -222,8 +247,7 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
           <button
             type="button"
             onClick={tirarDaLista}
-            disabled={carregando}
-            className="flex-1 rounded-card border border-line px-3 py-2.5 font-display text-caption font-semibold text-alert disabled:opacity-40"
+            className="flex-1 rounded-card border border-line px-3 py-2.5 font-display text-caption font-semibold text-alert"
           >
             🗑 Tirar da lista
           </button>

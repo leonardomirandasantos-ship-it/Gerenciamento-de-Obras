@@ -3,60 +3,8 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { assinarCapas, urlDaCapa } from "@/lib/fotoObra";
 import { LogoutButton } from "@/components/LogoutButton";
-import { AcoesDaObra } from "@/components/AcoesDaObra";
-
-type ObraDaLista = {
-  id: string;
-  name: string;
-  location: string | null;
-  photo_url: string | null;
-  status: string;
-  fases: { name: string; color: string }[] | { name: string; color: string } | null;
-};
-
-function CartaoDeObra({ obra, capa }: { obra: ObraDaLista; capa: string | null }) {
-  const fase = Array.isArray(obra.fases) ? obra.fases[0] : obra.fases;
-  const arquivada = obra.status === "archived";
-
-  // A engrenagem fica FORA do link da obra: link dentro de link não vale em
-  // HTML, e o toque acabaria abrindo a conversa em vez das configurações.
-  return (
-    <div className="flex items-center gap-1 rounded-card bg-surface p-3 shadow-card">
-      <Link
-        href={`/obras/${obra.id}/conversa`}
-        className="-m-1 flex min-w-0 flex-1 items-center gap-3 rounded-card p-1 active:bg-surface-alt"
-      >
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-soft">
-          {capa ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={capa} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <Image
-              src="/assets/logo/mascote-192.png"
-              alt=""
-              width={192}
-              height={192}
-              className="h-9 w-9"
-            />
-          )}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate font-display font-bold text-ink">{obra.name}</span>
-          {obra.location && (
-            <span className="block truncate text-micro text-ink-soft">{obra.location}</span>
-          )}
-        </span>
-        {fase && !arquivada && (
-          <span className="chip" style={{ "--chip": fase.color } as React.CSSProperties}>
-            {fase.name}
-          </span>
-        )}
-      </Link>
-
-      <AcoesDaObra obraId={obra.id} arquivada={arquivada} />
-    </div>
-  );
-}
+import { CartaoDeObra, type ObraDaLista } from "@/components/CartaoDeObra";
+import { carregarResumos, avisoDaObra, type AvisoDaObra } from "@/lib/resumoDaObra";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -71,10 +19,22 @@ export default async function Home() {
   const ativas = obras.filter((obra) => obra.status !== "archived");
   const arquivadas = obras.filter((obra) => obra.status === "archived");
 
-  const assinadas = await assinarCapas(
-    supabase,
-    obras.map((obra) => obra.photo_url),
-  );
+  // A obra arquivada não cobra nada: o resumo é só das ativas.
+  const [assinadas, resumos] = await Promise.all([
+    assinarCapas(
+      supabase,
+      obras.map((obra) => obra.photo_url),
+    ),
+    carregarResumos(
+      supabase,
+      ativas.map((obra) => obra.id),
+    ),
+  ]);
+
+  function avisoDe(obraId: string): AvisoDaObra | null {
+    const resumo = resumos.get(obraId);
+    return resumo ? avisoDaObra(resumo) : null;
+  }
 
   return (
     <main className="flex flex-1 flex-col overflow-hidden">
@@ -107,7 +67,11 @@ export default async function Home() {
               <ul className="space-y-3">
                 {ativas.map((obra) => (
                   <li key={obra.id}>
-                    <CartaoDeObra obra={obra} capa={urlDaCapa(obra.photo_url, assinadas)} />
+                    <CartaoDeObra
+                      obra={obra}
+                      capa={urlDaCapa(obra.photo_url, assinadas)}
+                      aviso={avisoDe(obra.id)}
+                    />
                   </li>
                 ))}
               </ul>
@@ -130,7 +94,11 @@ export default async function Home() {
                 <ul className="space-y-3 pt-2 opacity-75">
                   {arquivadas.map((obra) => (
                     <li key={obra.id}>
-                      <CartaoDeObra obra={obra} capa={urlDaCapa(obra.photo_url, assinadas)} />
+                      <CartaoDeObra
+                        obra={obra}
+                        capa={urlDaCapa(obra.photo_url, assinadas)}
+                        aviso={null}
+                      />
                     </li>
                   ))}
                 </ul>

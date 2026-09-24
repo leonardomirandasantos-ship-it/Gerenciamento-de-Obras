@@ -32,6 +32,7 @@
 | Token | Hex | Significado | Aplicação |
 |---|---|---|---|
 | `--pending` | `#E0913A` | Pendente / a comprar / pagamento | chip "material", "pagamento", "a comprar" |
+| `--pending-ink` | `#8A5512` | O mesmo âmbar, legível como texto | segunda linha do card de obra, texto sobre branco |
 | `--done` | `#3E8E5A` | Pago / quitado / concluído | itens ok no checklist |
 | `--info` | `#3A6EA5` | Lembrete / data | chip "lembrete", tags de data |
 | `--unclassified` | `#9B968C` | Não classificado (visível, neutro) | selo de evento sem tipo |

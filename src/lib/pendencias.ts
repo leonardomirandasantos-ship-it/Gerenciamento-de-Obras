@@ -1,4 +1,5 @@
 import { extrairItensDeLista, progressoChecklist } from "./checklist";
+import { descricaoDoEvento } from "./descricao";
 import type { ChecklistItem, ChecklistPayload, Evento, ListaPayload } from "./types";
 
 /** Data que ordena o card: o checklist herda a data da lista que o originou. */
@@ -65,4 +66,138 @@ export function itensAComprar(eventos: Evento[]): number {
     const { feitos, total } = progressoChecklist(itensDaLista(lista));
     return soma + (total - feitos);
   }, 0);
+}
+
+/** Hoje em ISO local (yyyy-mm-dd). Em UTC, perto da meia-noite já é amanhã. */
+export function hojeIso(agora = new Date()): string {
+  const ano = agora.getFullYear();
+  const mes = String(agora.getMonth() + 1).padStart(2, "0");
+  const dia = String(agora.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
+export type SituacaoDoPrazo = "atrasado" | "hoje" | "futuro";
+
+export function situacaoDoPrazo(data: string, hoje = hojeIso()): SituacaoDoPrazo {
+  if (data < hoje) return "atrasado";
+  if (data === hoje) return "hoje";
+  return "futuro";
+}
+
+/** Como a lista se chama fora do card dela. */
+export function tituloDaLista(evento: Evento): string {
+  return `Lista de ${new Date(dataDaLista(evento)).toLocaleDateString("pt-BR")}`;
+}
+
+export type PrazoAberto = {
+  eventoId: string;
+  texto: string;
+  data: string;
+  situacao: SituacaoDoPrazo;
+};
+
+/**
+ * Tudo que tem data marcada e ainda não foi resolvido — evento com prazo,
+ * lista com prazo e item de checklist com prazo, na mesma cesta.
+ *
+ * Fonte única da verdade do "o que vence": a lista de obras e a aba de
+ * pendências contam pela MESMA função, senão um dia a tela inicial diz
+ * "2 atrasados" e a aba mostra 3.
+ */
+export function prazosAbertos(eventos: Evento[], hoje = hojeIso()): PrazoAberto[] {
+  const prazos: PrazoAberto[] = [];
+
+  for (const evento of eventos) {
+    // Lista tem card próprio e entra no laço de baixo, com os itens dela.
+    if (evento.kind === "E1_lista" || evento.kind === "E2_checklist") continue;
+    const payload = evento.payload as { date?: string; done?: boolean };
+    if (!payload.date || payload.done) continue;
+    prazos.push({
+      eventoId: evento.id,
+      texto: descricaoDoEvento(evento),
+      data: payload.date,
+      situacao: situacaoDoPrazo(payload.date, hoje),
+    });
+  }
+
+  for (const lista of listasAbertas(eventos)) {
+    const prazo = prazoDaLista(lista);
+    if (prazo) {
+      prazos.push({
+        eventoId: lista.id,
+        texto: tituloDaLista(lista),
+        data: prazo,
+        situacao: situacaoDoPrazo(prazo, hoje),
+      });
+    }
+
+    for (const item of itensDaLista(lista)) {
+      if (!item.date || item.status === "ok") continue;
+      prazos.push({
+        eventoId: lista.id,
+        texto: item.text,
+        data: item.date,
+        situacao: situacaoDoPrazo(item.date, hoje),
+      });
+    }
+  }
+
+  return prazos.sort((a, b) => a.data.localeCompare(b.data));
+}
+
+/** Quando a lista cobra: o prazo dela ou o do item pendente mais próximo. */
+export function venceDaLista(evento: Evento): string | undefined {
+  const datas = [
+    prazoDaLista(evento),
+    ...itensDaLista(evento)
+      .filter((item) => item.status !== "ok")
+      .map((item) => item.date),
+  ].filter(Boolean) as string[];
+
+  return datas.sort()[0];
+}
+
+export type Pendencia = {
+  /** "lista" tem card com itens; "prazo" é um registro solto com data. */
+  tipo: "lista" | "prazo";
+  evento: Evento;
+  vence?: string;
+};
+
+/**
+ * A aba de pendências em UMA fila (D150). Antes havia uma seção "Com prazo"
+ * em cima repetindo itens que já apareciam no card da lista embaixo: dois
+ * lugares para marcar a mesma coisa feita.
+ *
+ * Ordem: quem tem data cobra primeiro, do mais atrasado ao mais distante;
+ * quem não tem data vem depois, do mais novo para o mais antigo.
+ */
+export function pendenciasOrdenadas(eventos: Evento[]): Pendencia[] {
+  const listas: Pendencia[] = listasAbertas(eventos).map((evento) => ({
+    tipo: "lista",
+    evento,
+    vence: venceDaLista(evento),
+  }));
+
+  const soltas: Pendencia[] = eventos
+    .filter((evento) => {
+      if (evento.kind === "E1_lista" || evento.kind === "E2_checklist") return false;
+      const payload = evento.payload as { date?: string; done?: boolean };
+      return Boolean(payload.date) && !payload.done;
+    })
+    .map((evento) => ({
+      tipo: "prazo",
+      evento,
+      vence: (evento.payload as { date?: string }).date,
+    }));
+
+  return [...listas, ...soltas].sort((a, b) => {
+    if (a.vence && b.vence) return a.vence.localeCompare(b.vence);
+    if (a.vence) return -1;
+    if (b.vence) return 1;
+
+    const criacaoA = a.tipo === "lista" ? dataDaLista(a.evento) : a.evento.received_at;
+    const criacaoB = b.tipo === "lista" ? dataDaLista(b.evento) : b.evento.received_at;
+    return criacaoB.localeCompare(criacaoA);
+  });
 }

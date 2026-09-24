@@ -18,6 +18,7 @@
   --color-primary-soft: var(--primary-soft);
 
   --color-pending: var(--pending);
+  --color-pending-ink: var(--pending-ink);
   --color-done: var(--done);
   --color-info: var(--info);
   --color-unclassified: var(--unclassified);

@@ -8,6 +8,8 @@
   --ink:#2A2A28; --ink-soft:#6B675E; --line:#DED8CC;
   --primary:#1F5C57; --primary-dark:#153F3B; --primary-soft:#DCE9E7;
   --pending:#E0913A; --done:#3E8E5A; --info:#3A6EA5;
+  /* O --pending nao tem contraste como texto sobre branco. */
+  --pending-ink:#8A5512;
   --unclassified:#9B968C; --alert:#C0553B;
   --phase-fundacao:#9B6A43; --phase-estrutura:#1F5C57; --phase-hidraulica:#3A6EA5;
   --phase-eletrica:#E0913A; --phase-acabamento:#3E8E5A;

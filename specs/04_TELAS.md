@@ -50,8 +50,15 @@ Entrar com link".
 ## Tela 2 — Home (lista de obras)
 **Objetivo:** índice de obras; escolher ou criar. NÃO captura nada.
 **Estrutura:** header "Minhas obras" + busca; lista de **cartões de obra** (foto,
-nome, chip de fase atual, última atividade, contadores discretos ex.: "3
-pendências", "5 a comprar"); **FAB "+"** (`--primary`) para criar obra.
+nome, chip de fase atual e uma **segunda linha de atenção**); **FAB "+"**
+(`--primary`) para criar obra.
+
+> **Segunda linha (D151):** uma frase só, a mais urgente, e só quando há o que
+> dizer — "Atrasado: comprar o material +2" (vermelho) › "Hoje: massa corrida"
+> (âmbar) › "3 coisas para organizar" (azul) › "8 itens em aberto" (cinza) ›
+> nada. Ela é um link próprio, para **Pendências**, separado do link da obra.
+> Obra arquivada não mostra linha.
+
 **Estados:** vazio (ilustração + "Crie sua primeira obra e comece a jogar tudo
 aqui"); loading (skeleton); busca sem resultado.
 **Interações:** tocar cartão → Conversa da obra; segurar → arquivar/renomear.
@@ -109,15 +116,18 @@ apontando para o input do chat (presente embaixo).
 ## Tela 6 — Checklists & pendências
 **Objetivo:** ver/atualizar listas de material e pendências (checklist vivo).
 **JTBD/fluxo:** JC-2 (parte lista) + Fluxo 2 casos A e B.
-**Estrutura:** abas superiores (na aba "Pendências"); lista de **checklists**
-(cada um nasceu de uma lista no chat), com cabeçalho "da conversa de [data]" +
-progresso (ex.: 4/7) + barra; itens com caixa (**falta/ok**), texto, nota
-opcional, chip de data quando houver; botão "atualizar status" (quando detecta
-re-envio).
+**Estrutura:** abas superiores (na aba "Pendências"); barra com as duas contas
+(D123) e, abaixo, **uma fila só** (D150): cartões de lista/checklist — cabeçalho
+"Lista de [data]" + progresso (ex.: 4/7) + barra, itens com caixa
+(**falta/ok**), texto, nota opcional e chip de data — misturados aos registros
+soltos com prazo, na ordem de quem cobra primeiro (sem data, os mais novos
+primeiro). Não existe mais seção "Com prazo" separada: ela repetia, em cima, o
+que já estava dentro do card da lista embaixo.
 **Estados:** vazio ("Suas listas viram checklists aqui."); concluído (recolhe/
 arquiva).
-**Interações:** tocar item → alterna falta/ok; adicionar nota (1 toque); fundir
-com re-envio (via sugestão) preservando histórico.
+**Interações:** tocar item → alterna falta/ok **na hora**, gravando por baixo
+(D152); adicionar nota (1 toque); fundir com re-envio (via sugestão)
+preservando histórico.
 **Anti-goals:** campos obrigatórios por item; forçar data.
 
 ---
