@@ -1,4 +1,4 @@
-import { extrairItensDeLista, progressoChecklist } from "./checklist";
+import { itensParaChecklist, progressoChecklist } from "./checklist";
 import { descricaoDoEvento } from "./descricao";
 import type { ChecklistItem, ChecklistPayload, Evento, ListaPayload } from "./types";
 
@@ -10,15 +10,17 @@ export function dataDaLista(evento: Evento): string {
   return evento.received_at;
 }
 
-/** Itens do card, venha ele de um checklist ou de uma lista ainda crua. */
+/**
+ * Itens do card, venha ele de um checklist ou de uma lista ainda crua. A lista
+ * crua passa pelo MESMO parser que vai criar o checklist — antes a prévia
+ * mostrava "areia hoje" e, ao tocar, virava "areia": a tela mentia sobre o que
+ * ia acontecer.
+ */
 export function itensDaLista(evento: Evento): ChecklistItem[] {
   if (evento.kind === "E2_checklist") {
     return (evento.payload as ChecklistPayload).items ?? [];
   }
-  return extrairItensDeLista(evento.raw_text ?? "").map((text) => ({
-    text,
-    status: "falta" as const,
-  }));
+  return itensParaChecklist(evento.raw_text ?? "");
 }
 
 /** Prazo da lista, quando ela tem um. */

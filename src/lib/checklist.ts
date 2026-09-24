@@ -6,12 +6,51 @@ const REGEX_STATUS_OK = /\s*\b(ok|feito|pronto|conclu[íi]do|comprado)\b\.?$/i;
 const REGEX_STATUS_FALTA = /\s*\b(n[ãa]o|falta|pendente)\b\.?$/i;
 const REGEX_NOTA = /^(.*?)\s+[-–—]\s+(.+)$/;
 
+const MAX_PALAVRAS_POR_ITEM = 5;
+const CONECTOR = /\s+\b(?:e|ou)\b\s+/i;
+/** Vírgula de lista, não de número: "2,5" e "R$ 1.250,00" ficam inteiros. */
+const VIRGULA_DE_LISTA = /,(?!\d)/;
+
+/**
+ * "comprar cal, cimento e areia" vira três itens (D156).
+ *
+ * A porta é estreita de propósito: exige vírgula E conector ("A, B e C"), que
+ * é como se enumera em português. Vírgula sozinha aparece em frase ("pix pro
+ * José Costa, mão de obra da semana") e "e" sozinho aparece em nome ("Suítes 1
+ * e 2", "Concreto muros e muros") — separar por um só dos dois picotava a
+ * amostra real do WhatsApp. Pedaço comprido também barra: enumeração de obra é
+ * curta, frase é longa.
+ *
+ * Isto NÃO é parsear lista em colunas (anti-goal do Fluxo 1): continua sendo
+ * uma linha = um assunto; só se reconhece que o assunto tinha três coisas.
+ */
+export function separarEnumeracao(linha: string): string[] {
+  const texto = linha.trim();
+
+  if (!VIRGULA_DE_LISTA.test(texto)) return [texto];
+  if (!CONECTOR.test(texto)) return [texto];
+  // "Muro fundo - rebocar, pintar" é item com nota, não enumeração.
+  if (REGEX_NOTA.test(texto)) return [texto];
+
+  const partes = texto
+    .split(new RegExp(VIRGULA_DE_LISTA, "g"))
+    .flatMap((parte) => parte.split(new RegExp(CONECTOR, "gi")))
+    .map((parte) => parte.trim())
+    .filter(Boolean);
+
+  if (partes.length < 2) return [texto];
+  if (partes.some((parte) => parte.split(/\s+/).length > MAX_PALAVRAS_POR_ITEM)) return [texto];
+
+  return partes;
+}
+
 /** Cada linha não vazia é um item. Não parseia em colunas (Fluxo 1, anti-goal). */
 export function extrairItensDeLista(texto: string): string[] {
   return texto
     .split("\n")
     .map((linha) => linha.replace(REGEX_BULLET, "").trim())
-    .filter((linha) => linha.length > 0);
+    .filter((linha) => linha.length > 0)
+    .flatMap(separarEnumeracao);
 }
 
 /** Normaliza para comparar itens entre um re-envio e um checklist existente. */

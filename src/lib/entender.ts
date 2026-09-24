@@ -150,7 +150,9 @@ Como decidir o tipo — o que separa é o TEMPO DO VERBO, não o assunto:
 - "gasto": dinheiro que JÁ saiu. "paguei", "gastei", "comprei", "adiantei", comprovante.
   Preencha valor e favorecido quando forem ditos.
 - "pendencia": o que ela AINDA vai fazer ou comprar. "preciso", "tenho que", "comprar",
-  "falta", lista de material a pedir. Se forem vários itens, preencha "itens".
+  "falta", lista de material a pedir. Se forem vários itens, preencha "itens" — uma
+  enumeração falada ("cal, cimento e areia") são TRÊS itens, um por posição do
+  vetor, nunca uma frase só.
 - "decisao": especificação de acabamento escolhida (cor, modelo, material de um ambiente).
   Preencha "ambientes" com os ambientes citados.
 - "orcamento": cotação, proposta, preço que alguém passou — dinheiro que ainda NÃO saiu.

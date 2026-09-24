@@ -51,6 +51,9 @@ export async function criarChecklistDeLista(
 
   const payload: ChecklistPayload = {
     title: `Lista de ${new Date(evento.received_at).toLocaleDateString("pt-BR")}`,
+    // O prazo vem junto: sem isso, "tudo isso para amanhã" sumia no instante
+    // em que ela marcava o primeiro item.
+    date: (evento.payload as { date?: string }).date,
     sourceListDate: evento.received_at,
     // Guardado para religar a lista se o checklist for excluído depois.
     sourceEventId: evento.id,

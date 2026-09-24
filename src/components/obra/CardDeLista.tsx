@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { criarChecklistDeLista } from "@/lib/aplicarSugestao";
-import { extrairItensDeLista, progressoChecklist } from "@/lib/checklist";
+import { itensParaChecklist, progressoChecklist } from "@/lib/checklist";
 import { formatarData } from "@/lib/datas";
 import { prazoDaLista, situacaoDoPrazo, tituloDaLista } from "@/lib/pendencias";
 import { createClient } from "@/lib/supabase/client";
@@ -46,12 +46,11 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
   const ehChecklist = evento.kind === "E2_checklist";
   const payload = evento.payload as ChecklistPayload;
 
+  // A lista crua usa o mesmo parser que vai gerar o checklist: o que ela vê
+  // aqui é exatamente o que vai ficar salvo quando tocar no primeiro item.
   const itensDoServidor: ChecklistItem[] = ehChecklist
     ? (payload.items ?? [])
-    : extrairItensDeLista(evento.raw_text ?? "").map((text) => ({
-        text,
-        status: "falta" as const,
-      }));
+    : itensParaChecklist(evento.raw_text ?? "");
 
   const [itens, setItens] = useState(itensDoServidor);
   const [versao, setVersao] = useState(evento.updated_at);

@@ -21,6 +21,8 @@ export type ChecklistItem = {
 
 export type ChecklistPayload = {
   title?: string;
+  /** Prazo herdado da lista de origem — some sem isso ao virar checklist. */
+  date?: string;
   sourceListDate?: string;
   sourceEventId?: string;
   items: ChecklistItem[];

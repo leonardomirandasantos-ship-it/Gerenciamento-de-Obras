@@ -73,7 +73,7 @@ legítimo; toda ação é reversível.
 
 ### Anti-goals do Fluxo 1
 Pop-up de categoria na captura ❌ · campo/legenda obrigatória ❌ · confirmação
-antes do "recebido" ❌ · parsear lista em colunas ❌ · notificação de rotina
+antes do "recebido" ❌ · parsear lista em colunas ❌ (mas enumeração numa linha vira itens — D156) · notificação de rotina
 diária ❌.
 
 ---
