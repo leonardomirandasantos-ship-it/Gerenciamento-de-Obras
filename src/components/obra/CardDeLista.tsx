@@ -214,7 +214,11 @@ export function CardDeLista({ evento, obraId }: { evento: Evento; obraId: string
                     {item.text}
                   </span>
                   {item.note && <span className="block text-micro text-ink-soft">{item.note}</span>}
-                  {item.date && item.status !== "ok" && <ChipDePrazo data={item.date} />}
+                  {/* Data igual à da lista já está no chip do topo: repetir em
+                    cada item só enche a tela. */}
+                  {item.date && item.date !== prazo && item.status !== "ok" && (
+                    <ChipDePrazo data={item.date} />
+                  )}
                 </span>
               </button>
             </li>

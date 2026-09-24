@@ -102,6 +102,42 @@ export function extrairPrazoDeclarado(texto: string, hoje = new Date()): string 
   return extrairDataMencionada(texto, hoje);
 }
 
+/**
+ * Tira do texto o trecho que virou data. "comprar para hoje cal" vira
+ * "comprar cal" (D153): se o prazo já está guardado no campo de data e
+ * aparece como chip no card, repetir "para hoje" dentro do item é ruído.
+ *
+ * Só roda quando uma data foi mesmo encontrada, então "para o contrapiso" e
+ * "cotovelo 3/4" passam intactos.
+ */
+const TRECHOS_DE_DATA: RegExp[] = [
+  /\b(?:at[ée]|pra|para|em|no)?\s*\b(?:o\s+)?dia\s+\d{1,2}(?:\/\d{1,2}(?:\/\d{2,4})?)?/gi,
+  /\b(?:at[ée]|pra|para|em|no)?\s*\d{1,2}\/\d{1,2}(?:\/\d{2,4})?/gi,
+  /\b(?:at[ée]|pra|para)?\s*depois de amanh[ãa](?![a-zà-ÿ])/gi,
+  /\b(?:at[ée]|pra|para)?\s*amanh[ãa](?![a-zà-ÿ])/gi,
+  /\b(?:at[ée]|pra|para)?\s*hoje\b/gi,
+  /\bem\s+\d{1,2}\s+dias?\b/gi,
+  /\b(?:at[ée]|pra|para|na)?\s*(?:semana que vem|pr[óo]xima semana)\b/gi,
+  /\b(?:at[ée]|pra|para|na)?\s*(?:domingo|segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado)(?:-feira)?\b/gi,
+];
+
+export function removerMencaoDeData(texto: string, hoje = new Date()): string {
+  if (!extrairDataMencionada(texto, hoje)) return texto;
+
+  let limpo = texto;
+  for (const regex of TRECHOS_DE_DATA) limpo = limpo.replace(regex, " ");
+
+  limpo = limpo
+    .replace(/\s+/g, " ")
+    // Sobra de preposição solta no fim: "comprar cimento para" → "comprar cimento".
+    .replace(/\s+(?:at[ée]|pra|para|em|no|na|de|do|da)\s*$/i, "")
+    .replace(/^[\s,;:-]+|[\s,;:-]+$/g, "")
+    .trim();
+
+  // Se sobrou só a data, o texto original diz mais do que nada.
+  return limpo.length > 0 ? limpo : texto;
+}
+
 export function formatarData(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR");
 }

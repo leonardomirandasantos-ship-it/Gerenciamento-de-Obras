@@ -1,4 +1,4 @@
-import { extrairDataMencionada } from "./datas";
+import { extrairDataMencionada, removerMencaoDeData } from "./datas";
 import type { ChecklistItem } from "./types";
 
 const REGEX_BULLET = /^[-*•·]\s*/;
@@ -43,8 +43,11 @@ export function parseItemComStatus(linha: string): ChecklistItem {
     texto = limpa.replace(REGEX_STATUS_FALTA, "").trim();
   }
 
-  // "comprar cimento até 20/09" já nasce com prazo no item.
+  // "comprar cimento até 20/09" já nasce com prazo no item. E, se a data virou
+  // campo, ela sai do texto: o chip já mostra "hoje" ao lado (D153). A mensagem
+  // original na conversa não muda — só o item do checklist.
   const date = extrairDataMencionada(limpa) ?? undefined;
+  if (date) texto = removerMencaoDeData(texto);
 
   const comNota = texto.match(REGEX_NOTA);
   if (comNota) {

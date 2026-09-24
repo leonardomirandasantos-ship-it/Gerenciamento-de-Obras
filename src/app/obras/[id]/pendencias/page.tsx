@@ -28,8 +28,10 @@ export default async function PendenciasPage({
   // repetia, em cima, itens que já apareciam dentro do card da lista embaixo —
   // dar o feito num lugar não mexia no outro.
   const pendencias = pendenciasOrdenadas(eventos);
+  const abertas = pendencias.filter((pendencia) => !pendencia.concluida);
+  const concluidas = pendencias.filter((pendencia) => pendencia.concluida);
   const aComprar = itensAComprar(eventos);
-  const listas = pendencias.filter((pendencia) => pendencia.tipo === "lista").length;
+  const listas = abertas.filter((pendencia) => pendencia.tipo === "lista").length;
 
   // Limito a 5 aqui (o componente mostra 1 por vez): com dados reais a engine
   // detecta 10+ e vira ruído (D25/D122).
@@ -61,9 +63,9 @@ export default async function PendenciasPage({
       )}
 
       <div className="flex-1 space-y-6 overflow-y-auto p-4 pb-28">
-        {pendencias.length > 0 && (
+        {abertas.length > 0 && (
           <ul id="secao-listas" className="scroll-mt-16 space-y-3">
-            {pendencias.map(({ tipo, evento }) =>
+            {abertas.map(({ tipo, evento }) =>
               tipo === "lista" ? (
                 <li key={evento.id}>
                   <CardDeLista evento={evento} obraId={id} />
@@ -75,12 +77,37 @@ export default async function PendenciasPage({
           </ul>
         )}
 
+        {abertas.length === 0 && concluidas.length > 0 && (
+          <p className="pt-6 text-center text-caption text-ink-soft">
+            Tudo marcado por aqui.
+          </p>
+        )}
+
         {sugestoes.length > 0 && (
           <SugestoesParaOrganizar
             sugestoes={sugestoes}
             eventos={porEvento}
             obraId={id}
           />
+        )}
+
+        {/* Concluídas no fim e recolhidas (D155): quem já marcou não precisa
+          rolar por cima do trabalho feito para achar o que falta — mas o card
+          continua a um toque, para desmarcar o que foi marcado sem querer. */}
+        {concluidas.length > 0 && (
+          <details className="group">
+            <summary className="cursor-pointer list-none py-2 text-micro font-semibold uppercase tracking-wide text-ink-soft">
+              <span className="inline-block transition-transform group-open:rotate-90">›</span>{" "}
+              Concluídas ({concluidas.length})
+            </summary>
+            <ul className="space-y-3 pt-2 opacity-75">
+              {concluidas.map(({ evento }) => (
+                <li key={evento.id}>
+                  <CardDeLista evento={evento} obraId={id} />
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
 
         <Link

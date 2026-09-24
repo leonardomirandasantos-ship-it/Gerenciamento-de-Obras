@@ -122,7 +122,8 @@ apontando para o input do chat (presente embaixo).
 (**falta/ok**), texto, nota opcional e chip de data — misturados aos registros
 soltos com prazo, na ordem de quem cobra primeiro (sem data, os mais novos
 primeiro). Não existe mais seção "Com prazo" separada: ela repetia, em cima, o
-que já estava dentro do card da lista embaixo.
+que já estava dentro do card da lista embaixo. No fim da página, recolhido,
+o grupo **"Concluídas (n)"** com as listas inteiramente marcadas (D155).
 **Estados:** vazio ("Suas listas viram checklists aqui."); concluído (recolhe/
 arquiva).
 **Interações:** tocar item → alterna falta/ok **na hora**, gravando por baixo

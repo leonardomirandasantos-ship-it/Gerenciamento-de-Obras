@@ -122,7 +122,25 @@ export function prazosAbertos(eventos: Evento[], hoje = hojeIso()): PrazoAberto[
 
   for (const lista of listasAbertas(eventos)) {
     const prazo = prazoDaLista(lista);
-    if (prazo) {
+    const itens = itensDaLista(lista);
+    const pendentes = itens.filter((item) => item.status !== "ok");
+
+    // O nome do ITEM, nunca "Lista de 24/09" (D154): o que faz sair de casa é
+    // "cal", não a data em que a lista chegou. Item sem data própria herda o
+    // prazo da lista; item já feito não cobra mais nada.
+    for (const item of pendentes) {
+      const data = item.date ?? prazo;
+      if (!data) continue;
+      prazos.push({
+        eventoId: lista.id,
+        texto: item.text,
+        data,
+        situacao: situacaoDoPrazo(data, hoje),
+      });
+    }
+
+    // Lista com prazo e sem nenhum item legível: ela mesma é a pendência.
+    if (prazo && itens.length === 0) {
       prazos.push({
         eventoId: lista.id,
         texto: tituloDaLista(lista),
@@ -130,19 +148,15 @@ export function prazosAbertos(eventos: Evento[], hoje = hojeIso()): PrazoAberto[
         situacao: situacaoDoPrazo(prazo, hoje),
       });
     }
-
-    for (const item of itensDaLista(lista)) {
-      if (!item.date || item.status === "ok") continue;
-      prazos.push({
-        eventoId: lista.id,
-        texto: item.text,
-        data: item.date,
-        situacao: situacaoDoPrazo(item.date, hoje),
-      });
-    }
   }
 
   return prazos.sort((a, b) => a.data.localeCompare(b.data));
+}
+
+/** Lista com todos os itens marcados. Sai da fila principal (D155). */
+export function listaConcluida(evento: Evento): boolean {
+  const { feitos, total } = progressoChecklist(itensDaLista(evento));
+  return total > 0 && feitos === total;
 }
 
 /** Quando a lista cobra: o prazo dela ou o do item pendente mais próximo. */
@@ -162,6 +176,8 @@ export type Pendencia = {
   tipo: "lista" | "prazo";
   evento: Evento;
   vence?: string;
+  /** Lista inteira marcada: vai para o grupo recolhido no fim (D155). */
+  concluida: boolean;
 };
 
 /**
@@ -177,6 +193,7 @@ export function pendenciasOrdenadas(eventos: Evento[]): Pendencia[] {
     tipo: "lista",
     evento,
     vence: venceDaLista(evento),
+    concluida: listaConcluida(evento),
   }));
 
   const soltas: Pendencia[] = eventos
@@ -189,6 +206,8 @@ export function pendenciasOrdenadas(eventos: Evento[]): Pendencia[] {
       tipo: "prazo",
       evento,
       vence: (evento.payload as { date?: string }).date,
+      // Registro resolvido some da fila (vira `done`), então nunca chega aqui.
+      concluida: false,
     }));
 
   return [...listas, ...soltas].sort((a, b) => {
