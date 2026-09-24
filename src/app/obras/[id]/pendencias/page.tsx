@@ -19,7 +19,9 @@ export default async function PendenciasPage({
 
   const [eventos, { data: registros }, { data: favorecidos }, { data: fases }] =
     await Promise.all([
-      carregarEventosComAnexos(supabase, id, undefined, { assinar: false }),
+      // Assinar ficou barato depois do D168 (vem guardada do banco), e as
+      // miniaturas dos cartões precisam dela.
+      carregarEventosComAnexos(supabase, id),
       supabase.from("sugestoes").select("*").eq("obra_id", id),
       supabase.from("favorecidos").select("name, type").eq("obra_id", id),
       supabase.from("fases").select("id, name").eq("obra_id", id).order("order"),

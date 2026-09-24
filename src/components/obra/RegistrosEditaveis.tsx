@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChipTipo } from "./ChipTipo";
 import { EditBottomSheet } from "./EditBottomSheet";
 import { descricaoDoEvento } from "@/lib/descricao";
+import { MiniaturaDoEvento } from "./MiniaturaDoEvento";
 import type { Evento, Fase } from "@/lib/types";
 
 /** Lista de registros tocável — abre o mesmo bottom sheet de edição (D46/D62). */
@@ -28,6 +29,7 @@ export function RegistrosEditaveis({
               onClick={() => setEditando(evento)}
               className="flex w-full items-center gap-2 rounded-card bg-surface shadow-card p-3 text-left active:bg-surface-alt"
             >
+              <MiniaturaDoEvento evento={evento} tamanho="h-9 w-9" />
               <ChipTipo kind={evento.kind} />
               <span className="min-w-0 flex-1 truncate text-sm text-ink">
                 {descricaoDoEvento(evento)}

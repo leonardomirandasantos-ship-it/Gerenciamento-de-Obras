@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { aplicarSugestao, ignorarSugestao } from "@/lib/aplicarSugestao";
 import { descricaoDoEvento } from "@/lib/descricao";
+import { MiniaturaDoEvento } from "./MiniaturaDoEvento";
 import { CampoFavorecido } from "./CampoFavorecido";
 import { VerNoChat } from "./VerNoChat";
 import type { Sugestao } from "@/lib/suggestions";
@@ -74,6 +75,7 @@ export function SuggestionCard({
           sugestão perdia o referente (D120). Aqui ela cita a mensagem. */}
       {citarMensagem && (
         <div className="flex items-start gap-2 border-l-2 border-primary/40 pl-2">
+          <MiniaturaDoEvento evento={evento} tamanho="h-9 w-9" />
           <p className="min-w-0 flex-1 line-clamp-3 whitespace-pre-wrap text-caption text-ink">
             {descricaoDoEvento(evento)}
           </p>

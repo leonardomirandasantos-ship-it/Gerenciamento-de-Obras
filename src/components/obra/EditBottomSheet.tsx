@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ambientesDoEvento } from "@/lib/ambientes";
 import { BottomSheet } from "./BottomSheet";
+import { MiniaturaDoEvento } from "./MiniaturaDoEvento";
 import { SeletorDeAmbientes } from "./SeletorDeAmbientes";
 import { CampoFavorecido } from "./CampoFavorecido";
 import {
@@ -146,12 +147,18 @@ export function EditBottomSheet({
         {(evento.anexos?.length ?? 0) > 0 && (
           <div className="mb-4 space-y-1">
             <label className="text-caption font-semibold text-ink">Legenda</label>
+            {/* "O que é esse arquivo?" sem mostrar o arquivo era adivinhação. */}
+            <div className="flex items-center gap-3">
+              <MiniaturaDoEvento evento={evento} tamanho="h-14 w-14" />
+              <div className="min-w-0 flex-1">
             <input
               value={legenda}
               onChange={(e) => setLegenda(e.target.value)}
               placeholder="O que é esse arquivo?"
               className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
             />
+              </div>
+            </div>
           </div>
         )}
 

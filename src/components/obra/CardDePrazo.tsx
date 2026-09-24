@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatarData } from "@/lib/datas";
 import { descricaoDoEvento } from "@/lib/descricao";
 import { situacaoDoPrazo } from "@/lib/pendencias";
+import { MiniaturaDoEvento } from "./MiniaturaDoEvento";
 import { VerNoChat } from "./VerNoChat";
 import type { Evento } from "@/lib/types";
 
@@ -43,6 +44,8 @@ export function CardDePrazo({ evento, obraId }: { evento: Evento; obraId: string
 
   return (
     <li className="flex items-center gap-2 rounded-card bg-surface p-3 shadow-card">
+      <MiniaturaDoEvento evento={evento} />
+
       <div className="min-w-0 flex-1 space-y-1">
         <p className="text-body text-ink">{descricaoDoEvento(evento)}</p>
         <div className="flex items-center gap-3">
