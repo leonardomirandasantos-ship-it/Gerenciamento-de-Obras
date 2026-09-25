@@ -35,6 +35,7 @@ export function resumoDaObra(
   registros: SugestaoRegistro[],
   favorecidos: { name: string; type: string | null }[],
   fases: { id: string; name: string }[] = [],
+  faseAtualId: string | null = null,
   hoje = hojeIso(),
 ): ResumoDaObra {
   const prazos = prazosAbertos(eventos, hoje);
@@ -45,7 +46,7 @@ export function resumoDaObra(
     vencemHoje: prazos.filter((prazo) => prazo.situacao === "hoje").length,
     primeiro: cobrando[0]?.texto,
     itensEmAberto: itensAComprar(eventos),
-    paraOrganizar: detectarSugestoes(eventos, registros, favorecidos, fases).length,
+    paraOrganizar: detectarSugestoes(eventos, registros, favorecidos, fases, faseAtualId).length,
   };
 }
 
@@ -108,13 +109,26 @@ export async function carregarResumos(
   const resumos = new Map<string, ResumoDaObra>();
   if (obraIds.length === 0) return resumos;
 
-  const [{ data: eventos }, { data: registros }, { data: favorecidos }, { data: fases }] =
-    await Promise.all([
-      supabase.from("eventos").select("*").in("obra_id", obraIds).eq("deleted", false),
-      supabase.from("sugestoes").select("*").in("obra_id", obraIds),
-      supabase.from("favorecidos").select("obra_id, name, type").in("obra_id", obraIds),
-      supabase.from("fases").select("obra_id, id, name").in("obra_id", obraIds).order("order"),
-    ]);
+  const [
+    { data: eventos },
+    { data: registros },
+    { data: favorecidos },
+    { data: fases },
+    { data: obrasComFase },
+  ] = await Promise.all([
+    supabase.from("eventos").select("*").in("obra_id", obraIds).eq("deleted", false),
+    supabase.from("sugestoes").select("*").in("obra_id", obraIds),
+    supabase.from("favorecidos").select("obra_id, name, type").in("obra_id", obraIds),
+    supabase.from("fases").select("obra_id, id, name").in("obra_id", obraIds).order("order"),
+    supabase.from("obras").select("id, current_phase_id").in("id", obraIds),
+  ]);
+
+  const faseAtualPorObra = new Map(
+    ((obrasComFase ?? []) as { id: string; current_phase_id: string | null }[]).map((obra) => [
+      obra.id,
+      obra.current_phase_id,
+    ]),
+  );
 
   const hoje = hojeIso();
 
@@ -130,6 +144,7 @@ export async function carregarResumos(
         ((fases ?? []) as { obra_id: string; id: string; name: string }[]).filter(
           (f) => f.obra_id === obraId,
         ),
+        faseAtualPorObra.get(obraId) ?? null,
         hoje,
       ),
     );

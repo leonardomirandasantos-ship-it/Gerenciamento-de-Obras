@@ -68,6 +68,7 @@ aqui"); loading (skeleton); busca sem resultado.
 
 ## Tela 3 — Nova obra
 **Objetivo:** criar obra no espírito "criar grupo de WhatsApp". (D34, D47)
+**Fase atual (D171):** chips opcionais "Em que fase ela está hoje?". É a única pergunta que paga caro se ficar sem resposta — sem fase atual, todo registro nasce órfão.
 **Estrutura:** header "Nova obra" com X (fechar); **foto da obra** (círculo com
 câmera, "Adicionar foto da obra"); campo **Nome da obra** (ex.: "Casa Ecologie");
 campo **Cliente (opcional)**; campo **Localização/cidade (opcional)** → alimenta

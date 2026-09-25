@@ -85,6 +85,8 @@ export function SuggestionCard({
 
       <p className="font-display text-body font-semibold text-ink">{sugestao.proposta}</p>
 
+      {sugestao.motivo && <p className="text-caption text-ink-soft">{sugestao.motivo}</p>}
+
       {sugestao.entradaPagamento && (
         <div className="flex gap-2">
           <input

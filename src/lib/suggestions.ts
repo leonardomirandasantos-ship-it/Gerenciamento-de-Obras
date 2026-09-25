@@ -22,6 +22,12 @@ export type Sugestao = {
   acaoAlternativaLabel?: string;
   /** Chips de 1 toque, quando a escolha é entre várias opções simples. */
   opcoes?: { label: string; valor: string }[];
+  /**
+   * Motivo em UMA linha, visível sem tocar em "por quê?" (D171). Só para o
+   * cartão que ela nunca viu antes e cuja utilidade não é óbvia — nos outros,
+   * explicar de graça é encher a tela.
+   */
+  motivo?: string;
   /** Pede valor/favorecido direto no cartão (pagamento sem dados). */
   entradaPagamento?: boolean;
   dados: Record<string, unknown>;
@@ -31,6 +37,9 @@ const REGEX_TITULO_VALOR = /^(.{3,40}?)\s*[:–—-]\s*(.+)$/;
 
 /** Janela do lote de "sem fase": recente o bastante para ser a fase de agora. */
 const DIAS_DE_ORFAOS = 30;
+
+/** De quantos em quantos registros a pergunta da fase volta (D171). */
+const REGISTROS_ENTRE_LEMBRETES = 5;
 
 export function extrairTituloEValor(texto: string): { title: string; value: string } {
   const primeiraLinha = texto.split("\n")[0].trim();
@@ -53,6 +62,9 @@ export function extrairTituloEValor(texto: string): { title: string; value: stri
  * no mapa porque existem registros antigos no banco.
  */
 const PRIORIDADE: Record<CasoSugestao, number> = {
+  // Primeiro de todos enquanto durar: sem fase atual, TUDO que entra nasce
+  // órfão, então é o toque que mais rende naquele momento (D171).
+  J_fase_da_obra: -1,
   B_status: 0,
   C_data: 1,
   H_pagamento_incompleto: 2,
@@ -102,9 +114,42 @@ export function detectarSugestoes(
   favorecidosComTipo: { name: string; type: string | null }[] = [],
   /** Fases da obra, para poder oferecer onde jogar o que ficou sem fase. */
   fases: { id: string; name: string }[] = [],
+  /** Fase atual da obra; sem ela, tudo que é capturado nasce órfão (D171). */
+  faseAtualId: string | null = null,
 ): Sugestao[] {
   const sugestoes: Sugestao[] = [];
   const checklists = eventos.filter((e) => e.kind === "E2_checklist");
+
+  // A obra sem fase atual (D171). Pergunta no primeiro registro e volta a cada
+  // 5 enquanto continuar sem resposta — cada registro que entra nesse estado
+  // nasce órfão. Duas dispensas calam de vez (casoSilenciado): quem decidiu
+  // que não quer fase não precisa ser cobrado para sempre.
+  if (!faseAtualId && fases.length > 0 && eventos.length > 0) {
+    const marco =
+      eventos.length < REGISTROS_ENTRE_LEMBRETES
+        ? 1
+        : Math.floor(eventos.length / REGISTROS_ENTRE_LEMBRETES) * REGISTROS_ENTRE_LEMBRETES;
+    const ancora = eventos[marco - 1];
+
+    if (
+      ancora &&
+      !casoSilenciado("J_fase_da_obra", registros) &&
+      !jaResolvida("J_fase_da_obra", ancora.id, registros)
+    ) {
+      sugestoes.push({
+        caso: "J_fase_da_obra",
+        eventoId: ancora.id,
+        gatilho: "Esta obra ainda não tem uma fase atual",
+        proposta: "Em que fase a obra está hoje?",
+        porque:
+          "É o que organiza o resto sozinho: tudo o que você mandar daqui pra frente já entra nessa fase, e aparece no gasto por fase e no filtro da documentação.",
+        acaoLabel: "Escolher fase",
+        motivo: "Assim tudo o que você mandar já entra organizado.",
+        opcoes: fases.map((fase) => ({ label: fase.name, valor: fase.id })),
+        dados: {},
+      });
+    }
+  }
 
   // Registro sem fase (D167). A fase atual gruda no que chega DEPOIS dela
   // (D69), então o que entrou antes de existir fase fica órfão para sempre:

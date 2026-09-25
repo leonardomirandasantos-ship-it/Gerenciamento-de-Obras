@@ -42,6 +42,7 @@ export default async function ConversaPage({
     (registros ?? []) as SugestaoRegistro[],
     favorecidos ?? [],
     (fases ?? []) as Fase[],
+    obra?.current_phase_id ?? null,
   );
 
   // O que a obra já usa vai junto no pedido de transcrição: assim o modelo

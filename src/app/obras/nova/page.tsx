@@ -8,6 +8,9 @@ import { createClient } from "@/lib/supabase/client";
 import { caminhoDaCapa } from "@/lib/fotoObra";
 import { prepararImagem } from "@/lib/imagem";
 
+/** Espelho dos nomes criados pelo trigger `criar_fases_padrao` no banco. */
+const FASES_PADRAO = ["Fundação", "Estrutura", "Hidráulica", "Elétrica", "Acabamento"];
+
 export default function NovaObraPage() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -16,6 +19,10 @@ export default function NovaObraPage() {
   const [startDate, setStartDate] = useState("");
   const [expectedEndDate, setExpectedEndDate] = useState("");
   const [details, setDetails] = useState("");
+  // Fase em que a obra está HOJE (D171). É opcional, mas é a pergunta que
+  // paga mais caro se ficar sem resposta: sem fase atual, tudo o que ela
+  // captura nasce órfão e some da rosca do resumo e do filtro da documentação.
+  const [fase, setFase] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
 
@@ -76,6 +83,21 @@ export default function NovaObraPage() {
         if (!erroUpload) {
           await supabase.from("obras").update({ photo_url: caminho }).eq("id", data.id);
         }
+      }
+    }
+
+    // As fases padrão nascem por trigger no banco, então o id só existe
+    // depois da obra criada — por isso a escolha é por NOME aqui.
+    if (fase) {
+      const { data: criada } = await supabase
+        .from("fases")
+        .select("id")
+        .eq("obra_id", data.id)
+        .eq("name", fase)
+        .maybeSingle();
+
+      if (criada) {
+        await supabase.from("obras").update({ current_phase_id: criada.id }).eq("id", data.id);
       }
     }
 
@@ -193,6 +215,29 @@ export default function NovaObraPage() {
               onChange={(e) => setExpectedEndDate(e.target.value)}
               className="w-full rounded-card border border-line bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-primary"
             />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-sm font-medium text-ink">Em que fase ela está hoje?</label>
+          <p className="text-micro text-ink-soft">
+            Tudo que você mandar entra nessa fase. Dá para trocar a qualquer momento na conversa.
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {FASES_PADRAO.map((nome) => (
+              <button
+                key={nome}
+                type="button"
+                // Tocar na que já está marcada desmarca — mesmo gesto do
+                // seletor da galeria (D142).
+                onClick={() => setFase(fase === nome ? "" : nome)}
+                className={`rounded-full border px-3 py-1.5 text-sm font-medium ${
+                  fase === nome ? "border-primary bg-primary text-white" : "border-line text-ink-soft"
+                }`}
+              >
+                {nome}
+              </button>
+            ))}
           </div>
         </div>
 

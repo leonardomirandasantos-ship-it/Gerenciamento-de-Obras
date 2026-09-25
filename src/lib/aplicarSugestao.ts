@@ -107,6 +107,10 @@ export async function aplicarSugestao(
       .eq("id", evento.id);
   }
 
+  if (sugestao.caso === "J_fase_da_obra" && opcao) {
+    await supabase.from("obras").update({ current_phase_id: opcao }).eq("id", obraId);
+  }
+
   if (sugestao.caso === "I_fase" && opcao) {
     const ids = (sugestao.dados.eventoIds as string[] | undefined) ?? [];
     if (ids.length > 0) {

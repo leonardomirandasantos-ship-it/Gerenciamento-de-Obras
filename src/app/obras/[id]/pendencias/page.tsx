@@ -17,7 +17,7 @@ export default async function PendenciasPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [eventos, { data: registros }, { data: favorecidos }, { data: fases }] =
+  const [eventos, { data: registros }, { data: favorecidos }, { data: fases }, { data: obra }] =
     await Promise.all([
       // Assinar ficou barato depois do D168 (vem guardada do banco), e as
       // miniaturas dos cartões precisam dela.
@@ -25,6 +25,7 @@ export default async function PendenciasPage({
       supabase.from("sugestoes").select("*").eq("obra_id", id),
       supabase.from("favorecidos").select("name, type").eq("obra_id", id),
       supabase.from("fases").select("id, name").eq("obra_id", id).order("order"),
+      supabase.from("obras").select("current_phase_id").eq("id", id).single(),
     ]);
 
   // Uma fila só (D150): lista, checklist e registro com prazo no mesmo lugar,
@@ -45,6 +46,7 @@ export default async function PendenciasPage({
       (registros ?? []) as SugestaoRegistro[],
       favorecidos ?? [],
       fases ?? [],
+      obra?.current_phase_id ?? null,
     ),
   ).slice(0, 5);
   const porEvento = new Map(eventos.map((evento) => [evento.id, evento]));
